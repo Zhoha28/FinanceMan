@@ -12,6 +12,13 @@ const state = {
     upcomingBills: JSON.parse(localStorage.getItem('upcomingBills') || '[]')
 };
 
+const aiState = {
+    summaries: {},
+    askHistory: [],
+    summaryLoading: {},
+    summaryErrors: {}
+};
+
 const chartPalette = ['#6366F1', '#F97316', '#10B981', '#F472B6', '#FBBF24', '#22D3EE', '#94A3B8'];
 
 // Store chart instances
@@ -22,11 +29,23 @@ const chartInstances = {
 
 let insightsSidebarOpen = false;
 
+async function ensureApiSuccess(response) {
+    if (response.ok) return;
+    let message = 'API Error';
+    try {
+        const data = await response.json();
+        message = data.error || data.message || message;
+    } catch (err) {
+        // Ignore JSON parsing errors for empty bodies
+    }
+    throw new Error(message);
+}
+
 // API functions
 const api = {
     async get(endpoint) {
         const response = await fetch(`/api${endpoint}`);
-        if (!response.ok) throw new Error('API Error');
+        await ensureApiSuccess(response);
         return response.json();
     },
 
@@ -36,7 +55,7 @@ const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error('API Error');
+        await ensureApiSuccess(response);
         return response.json();
     },
 
@@ -46,7 +65,7 @@ const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        if (!response.ok) throw new Error('API Error');
+        await ensureApiSuccess(response);
         return response.json();
     },
 
@@ -54,7 +73,7 @@ const api = {
         const response = await fetch(`/api${endpoint}`, {
             method: 'DELETE'
         });
-        if (!response.ok) throw new Error('API Error');
+        await ensureApiSuccess(response);
         return true;
     }
 };
@@ -106,6 +125,15 @@ function formatMonthYear(yearMonth) {
         year: 'numeric',
         month: 'long',
         timeZone: 'UTC'
+    });
+}
+
+function formatDateTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleString('en-CA', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
     });
 }
 
@@ -420,6 +448,16 @@ function updateMonthDisplay() {
 
     const heroMonthLabel = document.getElementById('heroMonthLabel');
     if (heroMonthLabel) heroMonthLabel.textContent = formatted;
+
+    updateAIContextForMonth();
+}
+
+function updateAIContextForMonth() {
+    const label = formatMonthYear(state.currentMonth);
+    const askMonth = document.getElementById('askAIMonthLabel');
+    if (askMonth) askMonth.textContent = label;
+    renderAICoachPanel();
+    renderAskAIHistory();
 }
 
 // Data loading
@@ -449,8 +487,228 @@ async function loadMonthData() {
         if (document.querySelector('.nav-link[data-page="settings"].active')) {
             updateSettings();
         }
+
+        renderAICoachPanel();
+        renderAskAIHistory();
     } catch (err) {
         console.error('Failed to load data:', err);
+    }
+
+    ensureAISummaryForMonth(state.currentMonth);
+}
+
+function renderAICoachPanel() {
+    const content = document.getElementById('aiCoachContent');
+    const status = document.getElementById('aiCoachStatus');
+    const timestamp = document.getElementById('aiCoachTimestamp');
+    const monthLabel = document.getElementById('aiCoachMonthLabel');
+    const refreshBtn = document.getElementById('refreshAICoachBtn');
+    if (!content || !status || !timestamp || !monthLabel) return;
+
+    monthLabel.textContent = formatMonthYear(state.currentMonth);
+
+    const summary = aiState.summaries[state.currentMonth];
+    const isLoading = aiState.summaryLoading[state.currentMonth];
+    const error = aiState.summaryErrors[state.currentMonth];
+
+    if (refreshBtn) {
+        refreshBtn.disabled = Boolean(isLoading);
+        refreshBtn.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+        refreshBtn.classList.toggle('opacity-60', Boolean(isLoading));
+        refreshBtn.classList.toggle('cursor-not-allowed', Boolean(isLoading));
+    }
+
+    const showStatus = (message, { isError = false } = {}) => {
+        status.textContent = message || '';
+        status.classList.toggle('hidden', !message);
+        status.classList.toggle('text-red-500', Boolean(message && isError));
+        status.classList.toggle('text-gray-500', Boolean(message && !isError));
+    };
+
+    if (isLoading) {
+        showStatus('Gemini is reviewing this month…');
+        content.textContent = 'Crunching the latest budgets, cash flow, and categories.';
+        timestamp.textContent = '';
+        return;
+    }
+
+    if (error) {
+        showStatus(error, { isError: true });
+        content.textContent = 'No summary available yet.';
+        timestamp.textContent = '';
+        return;
+    }
+
+    showStatus('');
+
+    if (summary?.text) {
+        content.textContent = summary.text;
+        const formatted = formatDateTime(summary.generatedAt);
+        timestamp.textContent = formatted ? `Refreshed ${formatted}` : 'Generated this session.';
+    } else {
+        content.textContent = 'No summary yet. Gemini will auto-generate it shortly.';
+        timestamp.textContent = '';
+    }
+}
+
+async function ensureAISummaryForMonth(month, { force = false } = {}) {
+    if (!month) return;
+    if (!force && (aiState.summaryLoading[month] || aiState.summaries[month]?.text)) {
+        renderAICoachPanel();
+        return;
+    }
+
+    aiState.summaryErrors[month] = null;
+    aiState.summaryLoading[month] = true;
+    renderAICoachPanel();
+
+    try {
+        const result = await api.post('/ai/summary', { month });
+        aiState.summaries[month] = {
+            text: result.summary,
+            generatedAt: result.generatedAt
+        };
+    } catch (err) {
+        console.error('AI summary failed:', err);
+        aiState.summaryErrors[month] = err.message || 'AI is unavailable right now.';
+    } finally {
+        aiState.summaryLoading[month] = false;
+        renderAICoachPanel();
+    }
+}
+
+function renderAskAIHistory() {
+    const container = document.getElementById('askAIResponses');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const entries = aiState.askHistory.filter(item => item.month === state.currentMonth);
+    if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'text-sm text-gray-500 dark:text-gray-400';
+        empty.textContent = 'No questions yet. Ask Gemini something about this month.';
+        container.appendChild(empty);
+        return;
+    }
+
+    entries.slice(-4).reverse().forEach(entry => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'p-4 rounded-lg bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700';
+
+        const questionEl = document.createElement('p');
+        questionEl.className = 'text-sm font-semibold text-gray-900 dark:text-gray-100';
+        questionEl.textContent = `You asked: ${entry.question}`;
+
+        const answerEl = document.createElement('p');
+        answerEl.className = 'text-sm text-gray-700 dark:text-gray-300 mt-2 whitespace-pre-wrap';
+        answerEl.textContent = entry.answer || 'No response.';
+
+        const metaEl = document.createElement('p');
+        metaEl.className = 'text-xs text-gray-500 dark:text-gray-400 mt-3';
+        const formatted = formatDateTime(entry.generatedAt);
+        metaEl.textContent = formatted ? `Answered ${formatted}` : '';
+
+        wrapper.appendChild(questionEl);
+        wrapper.appendChild(answerEl);
+        wrapper.appendChild(metaEl);
+        container.appendChild(wrapper);
+    });
+}
+
+function setAskAIStatus(message, { isError = false } = {}) {
+    const statusEl = document.getElementById('askAIStatus');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.classList.toggle('hidden', !message);
+    statusEl.classList.toggle('text-red-500', Boolean(message && isError));
+    statusEl.classList.toggle('text-gray-500', Boolean(message && !isError));
+}
+
+function setAskAILoading(isLoading) {
+    const button = document.getElementById('askAIButton');
+    if (!button) return;
+    if (!button.dataset.originalLabel) {
+        button.dataset.originalLabel = button.textContent;
+    }
+    button.disabled = isLoading;
+    button.textContent = isLoading ? 'Thinking…' : button.dataset.originalLabel;
+}
+
+async function handleAskAI(event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('askAIInput');
+    if (!input) return;
+    const question = input.value.trim();
+    if (!question) {
+        setAskAIStatus('Ask a question to get started.', { isError: true });
+        return;
+    }
+
+    setAskAILoading(true);
+    setAskAIStatus('Thinking…');
+    try {
+        const result = await api.post('/ai/ask', {
+            month: state.currentMonth,
+            question
+        });
+        aiState.askHistory.push({
+            month: state.currentMonth,
+            question,
+            answer: result.answer,
+            generatedAt: result.generatedAt
+        });
+        if (aiState.askHistory.length > 12) {
+            aiState.askHistory = aiState.askHistory.slice(-12);
+        }
+        input.value = '';
+        renderAskAIHistory();
+        setAskAIStatus('Answered by Gemini.');
+    } catch (err) {
+        console.error('Ask AI failed:', err);
+        setAskAIStatus(err.message || 'AI is unavailable right now.', { isError: true });
+    } finally {
+        setAskAILoading(false);
+    }
+}
+
+function setSuggestCategoryStatus(message, isError = false) {
+    const statusEl = document.getElementById('suggestCategoryStatus');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+    statusEl.classList.toggle('hidden', !message);
+    statusEl.classList.toggle('text-red-500', Boolean(message && isError));
+    statusEl.classList.toggle('text-gray-500', Boolean(message && !isError));
+}
+
+async function handleSuggestCategory() {
+    const notesEl = document.getElementById('transactionNotes');
+    const categorySelect = document.getElementById('transactionCategory');
+    const button = document.getElementById('suggestCategoryBtn');
+    if (!notesEl || !categorySelect) return;
+    const note = notesEl.value.trim();
+    if (!note) {
+        setSuggestCategoryStatus('Add a description first, then tap suggest.', true);
+        return;
+    }
+
+    setSuggestCategoryStatus('Looking for a match…');
+    if (button) button.disabled = true;
+    try {
+        const result = await api.post('/ai/suggest-category', {
+            note,
+            categories: state.categories.map(cat => ({ id: cat.id, name: cat.name }))
+        });
+        if (result.categoryId) {
+            categorySelect.value = result.categoryId;
+            setSuggestCategoryStatus(`Suggested: ${getCategoryName(result.categoryId)}`);
+        } else {
+            setSuggestCategoryStatus('No matching category found. Pick manually.', true);
+        }
+    } catch (err) {
+        console.error('Suggest category failed:', err);
+        setSuggestCategoryStatus(err.message || 'AI is unavailable right now.', true);
+    } finally {
+        if (button) button.disabled = false;
     }
 }
 
@@ -471,6 +729,11 @@ function updateDashboard() {
     categorySelect.innerHTML = state.categories.map(cat => 
         `<option value="${cat.id}" style="color: ${cat.color}">${cat.name}</option>`
     ).join('');
+}
+
+function getCategoryName(categoryId) {
+    const category = state.categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown';
 }
 
 function updateWeeklyPeek() {
@@ -900,6 +1163,28 @@ function calculateTotals() {
         else if (t.type === 'invest') acc.investments += amount;
         return acc;
     }, { spending: 0, savings: 0, investments: 0 });
+}
+
+function initAISections() {
+    const refreshBtn = document.getElementById('refreshAICoachBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            ensureAISummaryForMonth(state.currentMonth, { force: true });
+        });
+    }
+
+    const askForm = document.getElementById('askAIForm');
+    if (askForm) {
+        askForm.addEventListener('submit', handleAskAI);
+    }
+
+    const suggestBtn = document.getElementById('suggestCategoryBtn');
+    if (suggestBtn) {
+        suggestBtn.addEventListener('click', handleSuggestCategory);
+    }
+
+    renderAICoachPanel();
+    renderAskAIHistory();
 }
 
 // Transaction management
@@ -1434,6 +1719,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMonthNavigation();
     initDashboardShortcuts();
     initTransactionForm();
+    initAISections();
     initCategories();
     loadMonthData();
     

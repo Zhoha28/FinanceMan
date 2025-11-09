@@ -1,13 +1,16 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const multer = require('multer');
 const { parse } = require('csv-parse');
 const { stringify } = require('csv-stringify');
 const db = require('./db/jsonStore');
+const { getMonthContext, getComparisonContext, getCategoryList } = require('./services/aiDataService');
+const { generateMonthlySummary, answerFinanceQuestion, suggestCategory } = require('./services/geminiClient');
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -15,6 +18,97 @@ app.use(express.static('public'));
 
 // Helper to generate IDs
 const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// AI endpoints
+app.post('/api/ai/summary', async (req, res) => {
+    const { month } = req.body || {};
+    if (!month) {
+        return res.status(400).json({ error: 'Month is required.' });
+    }
+
+    try {
+        const context = await getMonthContext(month);
+        if (!context || !context.hasData) {
+            return res.status(404).json({ message: 'No transactions found for this month. Add some data first.' });
+        }
+
+        console.log('[AI][summary] Context snapshot:', {
+            month,
+            totalsByType: context?.summaryPayload?.totalsByType,
+            budgetCount: context?.summaryPayload?.budgets?.length,
+            topCategories: context?.summaryPayload?.topCategories?.map(cat => ({
+                categoryName: cat.categoryName,
+                spend: cat.totals?.spend
+            }))
+        });
+
+        const summary = await generateMonthlySummary(context);
+        res.json({ summary, month, generatedAt: new Date().toISOString() });
+    } catch (err) {
+        console.error('AI summary error:', err.message || err);
+        res.status(500).json({ error: 'Failed to generate AI summary. Please try again later.' });
+    }
+});
+
+app.post('/api/ai/ask', async (req, res) => {
+    const { month, question } = req.body || {};
+    const sanitizedQuestion = typeof question === 'string' ? question.trim() : '';
+    if (!month) {
+        return res.status(400).json({ error: 'Month is required.' });
+    }
+    if (!sanitizedQuestion) {
+        return res.status(400).json({ error: 'A question is required.' });
+    }
+
+    try {
+        const context = await getComparisonContext(month);
+        const hasData = (context.current && context.current.hasData) || (context.previous && context.previous.hasData);
+        if (!hasData) {
+            return res.status(404).json({ message: 'Not enough data to answer yet. Add some transactions first.' });
+        }
+
+        console.log('[AI][ask] Incoming question:', {
+            month,
+            question: sanitizedQuestion,
+            currentTotals: context.current?.totalsByType,
+            previousTotals: context.previous?.totalsByType
+        });
+
+        const answer = await answerFinanceQuestion(sanitizedQuestion, context);
+        res.json({
+            answer,
+            month: context.current?.month,
+            previousMonth: context.previous?.month,
+            generatedAt: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error('AI ask error:', err.message || err);
+        res.status(500).json({ error: 'Failed to answer the question. Please try again later.' });
+    }
+});
+
+app.post('/api/ai/suggest-category', async (req, res) => {
+    const { note, categories } = req.body || {};
+    if (!note || !note.trim()) {
+        return res.status(400).json({ error: 'A note/description is required.' });
+    }
+
+    try {
+        const availableCategories = Array.isArray(categories) && categories.length
+            ? categories
+            : await getCategoryList();
+
+        if (!availableCategories.length) {
+            return res.status(400).json({ error: 'No categories available to match.' });
+        }
+
+        const categoryId = await suggestCategory(note, availableCategories);
+        res.json({ categoryId });
+    } catch (err) {
+        console.error('AI suggest category error:', err.message || err);
+        res.status(500).json({ error: 'Failed to suggest a category. Please try again later.' });
+    }
+});
 
 // Endpoints for transactions
 app.get('/api/entries', async (req, res) => {

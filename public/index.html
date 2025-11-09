@@ -297,6 +297,7 @@
                         </div>
                     </div>
 
+
                     <div class="dashboard-panel">
                         <div class="panel-header">
                             <div>
@@ -326,8 +327,12 @@
                                 <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
                             </div>
                             <div class="md:col-span-2 lg:col-span-4">
-                                <label class="block text-sm font-medium mb-1">Notes</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="block text-sm font-medium">Notes</label>
+                                    <button type="button" id="suggestCategoryBtn" class="text-sm font-semibold text-primary hover:underline">Suggest category</button>
+                                </div>
                                 <textarea id="transactionNotes" class="form-textarea"></textarea>
+                                <p id="suggestCategoryStatus" class="text-xs text-gray-500 dark:text-gray-400 mt-1 hidden"></p>
                             </div>
                             <div class="md:col-span-2 lg:col-span-4">
                                 <button type="submit" class="btn-primary w-full md:w-auto">Add Transaction</button>
@@ -358,6 +363,28 @@
                             </table>
                         </div>
                     </div>
+
+
+                                        <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Ask AI</p>
+                                <h3 class="panel-title">Ask Gemini About Your Money</h3>
+                            </div>
+                        </div>
+                        <form id="askAIForm" class="space-y-3">
+                            <label class="block text-sm text-gray-500 dark:text-gray-400">
+                                Question about <span id="askAIMonthLabel" class="font-semibold text-gray-900 dark:text-gray-100">—</span>
+                            </label>
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <input type="text" id="askAIInput" class="form-input flex-1" placeholder="Why were my expenses so high this month?" autocomplete="off">
+                                <button type="submit" id="askAIButton" class="btn-secondary md:w-auto">Ask AI</button>
+                            </div>
+                            <p id="askAIStatus" class="text-sm text-gray-500 dark:text-gray-400 hidden"></p>
+                        </form>
+                        <div id="askAIResponses" class="mt-4 space-y-3"></div>
+                    </div>
+
                 </div>
             </div>
         </section>
@@ -642,17 +669,43 @@
                     </svg>
                 </button>
             </div>
-            <div class="insights-summary">
-                <div class="insight-pill">
-                    <span class="pill-label">Month</span>
-                    <span id="insightsMonth" class="pill-value"></span>
+            <div class="insights-body">
+                <div class="insights-summary">
+                    <div class="insight-pill">
+                        <span class="pill-label">Month</span>
+                        <span id="insightsMonth" class="pill-value"></span>
+                    </div>
+                    <div class="insight-pill">
+                        <span class="pill-label">Signals</span>
+                        <span id="insightsTotal" class="pill-value">0</span>
+                    </div>
                 </div>
-                <div class="insight-pill">
-                    <span class="pill-label">Signals</span>
-                    <span id="insightsTotal" class="pill-value">0</span>
+                <div class="ai-coach-card" aria-live="polite">
+                    <div class="ai-coach-header">
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-primary/80">Gemini Coach</p>
+                            <h4 class="text-lg font-semibold">Monthly Summary</h4>
+                        </div>
+                        <button type="button" id="refreshAICoachBtn" class="ai-coach-refresh" aria-label="Refresh AI summary">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0020 9M19 5A9 9 0 004 15"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Month selected:
+                        <span id="aiCoachMonthLabel" class="font-semibold text-gray-900 dark:text-gray-100">—</span>
+                    </p>
+                    <p id="aiCoachStatus" class="text-sm text-gray-500 dark:text-gray-400 mt-2 hidden"></p>
+                    <div id="aiCoachContent" class="ai-coach-body">
+                        Gemini will auto-generate a summary for this month.
+                    </div>
+                    <p id="aiCoachTimestamp" class="text-xs text-gray-500 dark:text-gray-400 mt-3"></p>
+                </div>
+                <div class="insights-list-container">
+                    <div id="insightsList" class="insights-list space-y-4"></div>
                 </div>
             </div>
-            <div id="insightsList" class="insights-list space-y-4"></div>
         </aside>
     </div>
 
