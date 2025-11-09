@@ -6,8 +6,13 @@ const state = {
     categories: [],
     accounts: [],
     budgets: {},
-    meta: {}
+    meta: {},
+    goals: JSON.parse(localStorage.getItem('financeGoals') || '{}'),
+    notificationsEnabled: localStorage.getItem('notificationsEnabled') === 'true',
+    upcomingBills: JSON.parse(localStorage.getItem('upcomingBills') || '[]')
 };
+
+const chartPalette = ['#6366F1', '#F97316', '#10B981', '#F472B6', '#FBBF24', '#22D3EE', '#94A3B8'];
 
 // Store chart instances
 const chartInstances = {
@@ -102,6 +107,22 @@ function formatMonthYear(yearMonth) {
         month: 'long',
         timeZone: 'UTC'
     });
+}
+
+function hexToRgba(hex, alpha = 1) {
+    if (!hex) return `rgba(99, 102, 241, ${alpha})`;
+    let sanitized = hex.replace('#', '');
+    if (sanitized.length === 3) {
+        sanitized = sanitized.split('').map(c => c + c).join('');
+    }
+    const bigint = parseInt(sanitized, 16);
+    if (Number.isNaN(bigint)) {
+        return `rgba(99, 102, 241, ${alpha})`;
+    }
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 
@@ -293,6 +314,94 @@ function initDashboardShortcuts() {
         document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         document.getElementById('transactionDate')?.focus();
     });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.shiftKey && event.key.toLowerCase() === 'a') {
+            event.preventDefault();
+            document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('transactionDate')?.focus();
+        }
+    });
+}
+
+function initReminderSettings() {
+    const statusEl = document.getElementById('notificationStatus');
+    if (statusEl) {
+        statusEl.textContent = state.notificationsEnabled
+            ? 'Notifications enabled'
+            : 'Notifications are off';
+    }
+
+    const enableBtn = document.getElementById('enableNotifications');
+    if (enableBtn && !enableBtn.dataset.bound) {
+        enableBtn.dataset.bound = 'true';
+        enableBtn.addEventListener('click', async () => {
+            if (!('Notification' in window)) {
+                alert('Notifications are not supported in this browser.');
+                return;
+            }
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                state.notificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+                if (statusEl) statusEl.textContent = 'Notifications enabled';
+                maybeNotifyDailyStreak(true);
+                checkUpcomingBills(true);
+            } else {
+                alert('Notifications permission denied.');
+            }
+        });
+    }
+
+    const billForm = document.getElementById('upcomingBillForm');
+    if (billForm && !billForm.dataset.bound) {
+        billForm.dataset.bound = 'true';
+        billForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('billName').value.trim();
+            const amount = Number(document.getElementById('billAmount').value);
+            const dueDate = document.getElementById('billDueDate').value;
+            if (!name || Number.isNaN(amount) || !dueDate) return;
+            const bill = {
+                id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
+                name,
+                amount,
+                dueDate
+            };
+            state.upcomingBills.push(bill);
+            localStorage.setItem('upcomingBills', JSON.stringify(state.upcomingBills));
+            billForm.reset();
+            renderUpcomingBills();
+        });
+    }
+
+    renderUpcomingBills();
+}
+
+function renderUpcomingBills() {
+    const list = document.getElementById('upcomingBillsList');
+    if (!list) return;
+    if (!state.upcomingBills.length) {
+        list.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">No upcoming bills yet.</p>';
+        return;
+    }
+    list.innerHTML = state.upcomingBills.map(bill => `
+        <div class="bill-card">
+            <div>
+                <p class="font-medium">${bill.name}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Due ${formatDate(bill.dueDate)} · ${formatMoney(bill.amount)}
+                </p>
+            </div>
+            <button onclick="removeBill('${bill.id}')">Remove</button>
+        </div>
+    `).join('');
+}
+
+function removeBill(id) {
+    state.upcomingBills = state.upcomingBills.filter(bill => bill.id !== id);
+    localStorage.setItem('upcomingBills', JSON.stringify(state.upcomingBills));
+    renderUpcomingBills();
 }
 
 function changeMonth(delta) {
@@ -351,6 +460,11 @@ function updateDashboard() {
     updateSummaryCards();
     
     updateWeeklyPeek();
+    updateDailyStreak();
+    updateGoals();
+    updatePredictions();
+    maybeNotifyDailyStreak();
+    checkUpcomingBills();
 
     // Update category select in transaction form
     const categorySelect = document.getElementById('transactionCategory');
@@ -383,6 +497,186 @@ function updateWeeklyPeek() {
     saveEl.textContent = formatMoney(weeklyTotals.savings);
     investEl.textContent = formatMoney(weeklyTotals.investments);
 }
+
+function updateDailyStreak() {
+    const streakEl = document.getElementById('dailyStreak');
+    if (!streakEl) return;
+
+    if (!state.transactions.length) {
+        streakEl.textContent = 'Start logging today!';
+        return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const uniqueDays = new Set(
+        state.transactions.map(t => {
+            const d = new Date(t.date);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime();
+        })
+    );
+
+    let streak = 0;
+    const cursor = new Date(today);
+    while (uniqueDays.has(cursor.getTime())) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+
+    streakEl.textContent = streak > 0 ? `🔥 ${streak}-day streak` : 'Start logging today!';
+}
+
+function triggerConfetti() {
+    const container = document.getElementById('confettiContainer');
+    if (!container) return;
+
+    const colors = ['#f87171', '#34d399', '#60a5fa', '#fbbf24', '#c084fc'];
+    const confettiCount = 20;
+
+    for (let i = 0; i < confettiCount; i++) {
+        const confetto = document.createElement('span');
+        confetto.className = 'confetto';
+        confetto.style.left = `${Math.random() * 100}%`;
+        confetto.style.background = colors[i % colors.length];
+        confetto.style.animationDelay = `${Math.random() * 0.2}s`;
+        container.appendChild(confetto);
+        setTimeout(() => confetto.remove(), 1400);
+    }
+}
+
+function calcCompound(monthlyContribution, years, annualRate = 0.05) {
+    if (!monthlyContribution) return 0;
+    const monthlyRate = annualRate / 12;
+    const periods = years * 12;
+    if (monthlyRate === 0) return monthlyContribution * periods;
+    return monthlyContribution * ((Math.pow(1 + monthlyRate, periods) - 1) / monthlyRate);
+}
+
+function updatePredictions() {
+    const savingsYearEl = document.getElementById('predictionSavingsYear');
+    if (!savingsYearEl) return;
+
+    const monthlySavings = state.transactions
+        .filter(t => t.type === 'save')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+    const monthlyInvest = state.transactions
+        .filter(t => t.type === 'invest')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const savingsYear = monthlySavings * 12;
+    const savingsFive = savingsYear * 5;
+    const investYear = monthlyInvest * 12;
+    const investFive = calcCompound(monthlyInvest, 5, 0.05);
+
+    document.getElementById('predictionSavingsYear').textContent = formatMoney(savingsYear);
+    document.getElementById('predictionSavingsFive').textContent = formatMoney(savingsFive);
+    document.getElementById('predictionInvestYear').textContent = formatMoney(investYear);
+    document.getElementById('predictionInvestFive').textContent = formatMoney(investFive);
+}
+function updateGoals() {
+    const defaultGoals = {
+        emergency: { target: 5000, current: 0 },
+        vacation: { target: 2000, current: 0 },
+        invest: { target: 3000, current: 0 }
+    };
+
+    const mergedGoals = {};
+    Object.keys(defaultGoals).forEach(key => {
+        mergedGoals[key] = { ...defaultGoals[key], ...(state.goals[key] || {}) };
+    });
+    state.goals = mergedGoals;
+
+    const goalMap = [
+        { key: 'emergency', label: 'goalEmergency' },
+        { key: 'vacation', label: 'goalVacation' },
+        { key: 'invest', label: 'goalInvest' }
+    ];
+
+    goalMap.forEach(({ key, label }) => {
+        const goal = state.goals[key];
+        const valueEl = document.getElementById(label);
+        const progressEl = document.getElementById(`${label}Progress`);
+        if (!goal || !valueEl || !progressEl) return;
+
+        valueEl.textContent = `${formatMoney(goal.current)} / ${formatMoney(goal.target)}`;
+        const fill = goal.target ? Math.min(goal.current / goal.target, 1) * 100 : 0;
+        progressEl.style.width = `${fill}%`;
+    });
+
+    document.querySelectorAll('.goal-edit').forEach(btn => {
+        btn.onclick = () => editGoal(btn.dataset.goal);
+    });
+}
+
+function editGoal(goalKey) {
+    const goal = state.goals[goalKey];
+    if (!goal) return;
+
+    showModal({
+        title: 'Edit Goal',
+        content: `
+            <form id="editGoalForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Target Amount</label>
+                        <input type="number" id="goalTarget" value="${goal.target}" min="0" step="100" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Current Saved</label>
+                        <input type="number" id="goalCurrent" value="${goal.current}" min="0" step="50" class="form-input">
+                    </div>
+                </div>
+            </form>
+        `,
+        onConfirm: () => {
+            const target = Number(document.getElementById('goalTarget').value);
+            const current = Number(document.getElementById('goalCurrent').value);
+            if (Number.isNaN(target) || Number.isNaN(current)) return;
+            state.goals[goalKey] = {
+                target,
+                current
+            };
+            localStorage.setItem('financeGoals', JSON.stringify(state.goals));
+            updateGoals();
+        }
+    });
+}
+
+function maybeNotifyDailyStreak(force = false) {
+    if (!state.notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const today = new Date();
+    const todayKey = today.toISOString().slice(0, 10);
+    const hasTodayEntry = state.transactions.some(tx => tx.date === todayKey);
+    if (hasTodayEntry && !force) return;
+    if (!force && today.getHours() < 18) return;
+    const last = localStorage.getItem('lastStreakNotification');
+    if (!force && last === todayKey) return;
+    new Notification('Keep your streak alive', {
+        body: 'You have not logged a transaction today. Add one to keep the streak going!'
+    });
+    localStorage.setItem('lastStreakNotification', todayKey);
+}
+
+function checkUpcomingBills(force = false) {
+    if (!state.notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!state.upcomingBills.length) return;
+    const today = new Date();
+    state.upcomingBills.forEach(bill => {
+        const dueDate = new Date(bill.dueDate);
+        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0 || diffDays > 3) return;
+        const key = `billNotify_${bill.id}_${bill.dueDate}`;
+        if (!force && localStorage.getItem(key) === today.toDateString()) return;
+        new Notification('Upcoming bill reminder', {
+            body: `${bill.name} is due ${formatDate(bill.dueDate)} for ${formatMoney(bill.amount)}`
+        });
+        localStorage.setItem(key, today.toDateString());
+    });
+}
+
+window.removeBill = removeBill;
 
 // Budgets management
 function updateBudgets() {
@@ -625,6 +919,7 @@ function initTransactionForm() {
             await api.post('/entries', transaction);
             e.target.reset();
             await loadMonthData();
+            triggerConfetti();
         } catch (err) {
             console.error('Failed to add transaction:', err);
         }
@@ -726,6 +1021,14 @@ async function editTransaction(id) {
                         <label class="block text-sm font-medium mb-1">Notes</label>
                         <textarea id="editNotes" class="form-textarea">${transaction.notes || ''}</textarea>
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Actions</label>
+                        <select id="editAction" class="form-select">
+                            <option value="update" selected>Update transaction</option>
+                            <option value="duplicate">Duplicate transaction</option>
+                            <option value="convert">Convert type (spend/save/invest)</option>
+                        </select>
+                    </div>
                 </div>
             </form>
         `,
@@ -738,11 +1041,17 @@ async function editTransaction(id) {
                 notes: document.getElementById('editNotes').value
             };
             
+            const action = document.getElementById('editAction').value;
+            
             try {
-                await api.put(`/entries/${id}`, updates);
+                if (action === 'duplicate') {
+                    await api.post('/entries', updates);
+                } else {
+                    await api.put(`/entries/${id}`, updates);
+                }
                 await loadMonthData();
             } catch (err) {
-                console.error('Failed to update transaction:', err);
+                console.error('Failed to process transaction:', err);
             }
         }
     });
@@ -802,15 +1111,21 @@ function updateCategoryPieChart() {
     
     const ctx = canvas.getContext('2d');
     
+    const palette = chartPalette.map(color =>
+        state.theme === 'dark' ? hexToRgba(color, 0.85) : color
+    );
+
     chartInstances.category = new Chart(ctx, {
         type: 'pie',
         data: {
             labels: Object.keys(spendingByCategory),
             datasets: [{
                 data: Object.values(spendingByCategory),
-                backgroundColor: state.categories
-                    .filter(c => Object.keys(spendingByCategory).includes(c.name))
-                    .map(c => c.color)
+                backgroundColor: Object.keys(spendingByCategory).map((_, idx) =>
+                    palette[idx % palette.length]
+                ),
+                borderColor: state.theme === 'dark' ? 'rgba(15, 23, 42, 0.7)' : '#FFFFFF',
+                borderWidth: 1
             }]
         },
         options: {
@@ -894,17 +1209,17 @@ async function updateMonthlyTrendsChart() {
                     {
                         label: 'Spending',
                         data: spending,
-                        backgroundColor: '#EF4444'
+                        backgroundColor: state.theme === 'dark' ? 'rgba(248, 113, 113, 0.65)' : '#EF4444'
                     },
                     {
                         label: 'Saving',
                         data: saving,
-                        backgroundColor: '#10B981'
+                        backgroundColor: state.theme === 'dark' ? 'rgba(52, 211, 153, 0.7)' : '#10B981'
                     },
                     {
                         label: 'Investing',
                         data: investing,
-                        backgroundColor: '#6366F1'
+                        backgroundColor: state.theme === 'dark' ? 'rgba(99, 102, 241, 0.7)' : '#6366F1'
                     }
                 ]
             },
@@ -1583,4 +1898,6 @@ function updateSettings() {
         
         e.target.value = '';
     });
+
+    initReminderSettings();
 }

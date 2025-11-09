@@ -53,5 +53,10 @@
     "id": "demo1",
     "name": "Demo Category",
     "color": "#a6ff00"
+  },
+  {
+    "id": "hwguibqlw",
+    "name": "test",
+    "color": "#c40808"
   }
 ]

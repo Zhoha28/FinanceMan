@@ -1,69 +1,50 @@
 # FinanceMan - Personal Finance Manager
 
-A modern, responsive personal finance management web application built with Node.js, Express, Tailwind CSS, and Chart.js. All data is stored locally in JSON files for privacy and simplicity.
+A modern, responsive personal finance app built with Node.js, Express, Chart.js, Tailwind utilities, and vanilla JS. All data lives locally in JSON files for privacy and simplicity.
 
 ## Features
 
-- 📊 Interactive dashboard with financial summaries and charts
-- 💰 Track spending, saving, and investments
-- 📅 Monthly budgeting with progress tracking
-- 🏦 Multiple account management
-- 🏷️ Customizable categories with color coding
-- 📈 Visual insights and smart alerts
-- 🌓 Dark/light theme support
-- 📱 Fully responsive design
-- 📤 CSV import/export
-- 📂 Local JSON file storage
-- 🔄 Month-over-month tracking
+- 📊 Insightful dashboard with charts, hero metrics, and page-specific panels  
+- ⚡ Global Quick Add button + `Shift + A` shortcut for instant transaction logging  
+- 🔥 Weekly Peek and daily streak chip to keep habits intact  
+- 🎉 Micro-celebrations (confetti) after every logged transaction  
+- 🎯 Goal tracker cards with editable targets  
+- 🔔 Browser notifications for streak reminders & upcoming bills  
+- 🏦 Multi-account management with inline balance editing  
+- 🏷️ Color-coded categories and smart budgeting controls  
+- 📁 Archive explorer with collapsible monthly history  
+- 🌓 Light/dark mode, fully responsive layout, CSV import/export, and more
 
 ## Tech Stack
 
-- Backend: Node.js + Express
-- Frontend: HTML + Tailwind CSS + Vanilla JS
-- Charts: Chart.js
-- Storage: Local JSON files
-- No external databases or APIs required
+- Backend: Node.js + Express  
+- Frontend: HTML + Tailwind CSS + vanilla JS  
+- Charts: Chart.js  
+- Storage: Local JSON files (no external DBs)
 
 ## Setup
 
-1. Clone the repository:
-\`\`\`bash
-git clone [repository-url]
+```bash
+git clone <repository-url>
 cd financeman
-\`\`\`
-
-2. Install dependencies:
-\`\`\`bash
 npm install
-\`\`\`
-
-3. Start the server:
-\`\`\`bash
 npm start
-\`\`\`
+# open http://localhost:3000
+```
 
-4. Open in your browser:
-\`\`\`
-http://localhost:3000
-\`\`\`
+> Note: FinanceMan stores everything in local JSON files. It’s designed to run on your machine (localhost) rather than a shared hosting environment.
 
-## Data Structure
+For live reloading during development:
 
-The app uses five main JSON files for data storage:
-
-- \`data/transactions.json\`: All financial transactions
-- \`data/accounts.json\`: Account configurations
-- \`data/categories.json\`: Spending/saving categories
-- \`data/budgets.json\`: Monthly budgets per category
-- \`data/meta.json\`: Monthly metadata (balances, expectations)
-
-## Development
-
-To run in development mode with auto-reload:
-
-\`\`\`bash
+```bash
 npm run dev
-\`\`\`
+```
+
+## Build Notes
+
+- Crafted over a chill weekend (~6 focused hours) with endless lofi + coffee.  
+- Proudly built with help from OpenAI’s ChatGPT (GPT‑4 class) for ideation and speed boosts.  
+- Vibe code: “Track your stuff, celebrate the wins, keep it simple.”
 
 ## License
 

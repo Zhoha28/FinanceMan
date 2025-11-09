@@ -100,7 +100,7 @@
 
         <!-- Dashboard Section -->
         <section id="dashboard" class="page active space-y-8">
-            <button class="quick-add-btn" aria-label="Add transaction quickly">
+            <button class="quick-add-btn" aria-label="Add transaction quickly" data-tooltip="Quick Add (Shift + A)">
                 <span>+</span>
             </button>
 
@@ -138,6 +138,7 @@
                                 <p class="panel-eyebrow">Weekly Peek</p>
                                 <h3 class="panel-title">Last 7 Days</h3>
                             </div>
+                            <span class="streak-chip" id="dailyStreak">Start logging today!</span>
                         </div>
                         <div class="weekly-grid">
                             <div>
@@ -151,6 +152,80 @@
                             <div>
                                 <span>Invest</span>
                                 <strong id="weeklyInvest">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Goals</p>
+                                <h3 class="panel-title">Savings Targets</h3>
+                            </div>
+                        </div>
+                        <div class="goal-grid">
+                            <div class="goal-card">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="goal-label">Emergency Fund</span>
+                                        <div class="goal-value" id="goalEmergency">$0 / $0</div>
+                                    </div>
+                                    <button class="goal-edit" data-goal="emergency">Edit</button>
+                                </div>
+                                <div class="goal-progress">
+                                    <div class="goal-progress-fill" id="goalEmergencyProgress" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="goal-card">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="goal-label">Vacation</span>
+                                        <div class="goal-value" id="goalVacation">$0 / $0</div>
+                                    </div>
+                                    <button class="goal-edit" data-goal="vacation">Edit</button>
+                                </div>
+                                <div class="goal-progress">
+                                    <div class="goal-progress-fill" id="goalVacationProgress" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="goal-card">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <span class="goal-label">Investments</span>
+                                        <div class="goal-value" id="goalInvest">$0 / $0</div>
+                                    </div>
+                                    <button class="goal-edit" data-goal="invest">Edit</button>
+                                </div>
+                                <div class="goal-progress">
+                                    <div class="goal-progress-fill" id="goalInvestProgress" style="width:0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Forecast</p>
+                                <h3 class="panel-title">If you keep this pace...</h3>
+                            </div>
+                        </div>
+                        <div class="forecast-grid">
+                            <div class="forecast-card">
+                                <span>12-month Savings</span>
+                                <strong id="predictionSavingsYear">$0</strong>
+                            </div>
+                            <div class="forecast-card">
+                                <span>5-year Savings</span>
+                                <strong id="predictionSavingsFive">$0</strong>
+                            </div>
+                            <div class="forecast-card">
+                                <span>12-month Investments</span>
+                                <strong id="predictionInvestYear">$0</strong>
+                            </div>
+                            <div class="forecast-card">
+                                <span>5-year Investments (5% APY)</span>
+                                <strong id="predictionInvestFive">$0</strong>
                             </div>
                         </div>
                     </div>
@@ -462,6 +537,36 @@
                     </label>
                 </div>
             </div>
+
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Reminders</p>
+                        <h3 class="panel-title">Notifications & Upcoming Bills</h3>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
+                        <div>
+                            <p class="font-medium">Browser Notifications</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400" id="notificationStatus">Notifications are off</p>
+                        </div>
+                        <button id="enableNotifications" class="btn-primary">Enable Notifications</button>
+                    </div>
+                    <div>
+                        <h3 class="font-medium mb-2">Add Upcoming Bill</h3>
+                        <form id="upcomingBillForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <input type="text" id="billName" placeholder="Name (e.g. Rent)" class="form-input" required>
+                            <input type="number" id="billAmount" placeholder="Amount" class="form-input" min="0" step="0.01" required>
+                            <input type="date" id="billDueDate" class="form-input" required>
+                            <div class="md:col-span-3">
+                                <button type="submit" class="btn-secondary">Save Bill</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div id="upcomingBillsList" class="space-y-3"></div>
+                </div>
+            </div>
             
             <div class="dashboard-panel">
                 <div class="panel-header">
@@ -498,6 +603,8 @@
             </div>
         </section>
     </main>
+
+    <div id="confettiContainer" aria-hidden="true"></div>
 
     <footer class="site-footer">
         <div class="footer-content">
