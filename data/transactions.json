@@ -456,5 +456,14 @@
     "amount": 20,
     "notes": "se",
     "createdAt": "2025-11-09T05:49:46.396Z"
+  },
+  {
+    "id": "9v5u2vcj0",
+    "date": "2025-11-17",
+    "type": "invest",
+    "category": "cat1",
+    "amount": 30,
+    "notes": "Cat litter",
+    "createdAt": "2025-11-09T15:42:52.110Z"
   }
 ]

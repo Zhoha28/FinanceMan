@@ -77,8 +77,8 @@
     <!-- Main Content Area -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Month Selector -->
-        <div class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-4">
+        <div class="month-toolbar flex flex-wrap items-center justify-between gap-4 mb-8">
+            <div class="flex items-center space-x-4 month-nav-group">
                 <button id="prevMonth" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -91,7 +91,9 @@
                     </svg>
                 </button>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center flex-wrap gap-3 month-toolbar-actions">
+                <label for="monthQuickSelect" class="sr-only">Jump to month</label>
+                <select id="monthQuickSelect" class="month-quick-select"></select>
                 <button id="importBtn" class="btn-secondary">Import CSV</button>
                 <button id="exportBtn" class="btn-secondary">Export CSV</button>
                 <input type="file" id="csvFileInput" accept=".csv" class="hidden">
@@ -100,7 +102,7 @@
 
         <!-- Dashboard Section -->
         <section id="dashboard" class="page active space-y-8">
-            <button class="quick-add-btn" aria-label="Add transaction quickly" data-tooltip="Quick Add (Shift + A)">
+            <button class="quick-add-btn" type="button" aria-label="Add transaction quickly" data-tooltip="Quick Add (Shift + A)" data-open-transaction-drawer>
                 <span>+</span>
             </button>
 
@@ -110,20 +112,40 @@
                     <h1 class="hero-title">Financial Command Center</h1>
                     <p class="hero-subtitle">Track, act, and optimize your finances for <span id="heroMonthLabel">this month</span>.</p>
                     <div class="hero-actions">
-                        <button id="dashboardLogTransaction" class="btn-primary">Log a Transaction</button>
+                        <button id="dashboardLogTransaction" type="button" class="btn-primary" data-open-transaction-drawer>Log a Transaction</button>
                         <button id="insightsQuickLaunch" class="btn-secondary">Open Insight Center</button>
                     </div>
                 </div>
-                <div class="hero-pills">
-                    <div class="hero-pill">
+                <div class="hero-metrics">
+                    <div class="hero-pill hero-pill--inline">
                         <span class="pill-label">Current Month</span>
                         <span class="pill-value" id="heroMonthValue">-</span>
                     </div>
-                    <div class="hero-pill">
-                        <span class="pill-label">Net Change</span>
-                        <span class="pill-value" id="heroNetChange">$0.00</span>
+                    <div class="hero-metric">
+                        <div class="hero-metric-label">Net Cash Flow</div>
+                        <div class="hero-metric-value" id="heroNetCashValue">$0.00</div>
+                        <p class="hero-metric-footnote" id="heroNetCashDelta">Baseline month</p>
                     </div>
-                    <div class="hero-pill">
+                    <div class="hero-metric">
+                        <div class="hero-metric-label">Monthly Spend</div>
+                        <div class="hero-metric-value" id="heroSpendValue">$0.00</div>
+                        <div class="hero-metric-progress">
+                            <div class="hero-metric-progress-track">
+                                <div class="hero-metric-progress-fill" id="heroSpendProgress" style="width:0%"></div>
+                            </div>
+                            <span id="heroSpendPlanLabel">No plan set</span>
+                        </div>
+                    </div>
+                    <div class="hero-metric hero-metric--ring">
+                        <div class="hero-budget-ring" id="heroBudgetRing">
+                            <span id="heroBudgetValue">0%</span>
+                        </div>
+                        <div>
+                            <div class="hero-metric-label">Budget Utilization</div>
+                            <p class="hero-metric-footnote" id="heroBudgetLabel">No budgets yet</p>
+                        </div>
+                    </div>
+                    <div class="hero-pill hero-pill--inline">
                         <span class="pill-label">Signals</span>
                         <span class="pill-value" id="heroSignals">0 insights</span>
                     </div>
@@ -131,150 +153,165 @@
             </div>
 
             <div class="dashboard-grid">
-                <div class="space-y-6">
-                    <div class="dashboard-panel weekly-peek">
+                <div class="dashboard-grid-primary">
+                    <div class="dashboard-panel momentum-panel panel-span-2">
                         <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Weekly Peek</p>
-                                <h3 class="panel-title">Last 7 Days</h3>
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--pulse">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M4 12h3l2.5-6 3 12 2.5-6h4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="panel-eyebrow">Momentum</p>
+                                    <h3 class="panel-title">Where the money is moving</h3>
+                                </div>
                             </div>
                             <span class="streak-chip" id="dailyStreak">Start logging today!</span>
                         </div>
-                        <div class="weekly-grid">
-                            <div>
-                                <span>Spend</span>
-                                <strong id="weeklySpend">$0.00</strong>
-                            </div>
-                            <div>
-                                <span>Save</span>
-                                <strong id="weeklySave">$0.00</strong>
-                            </div>
-                            <div>
-                                <span>Invest</span>
-                                <strong id="weeklyInvest">$0.00</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Goals</p>
-                                <h3 class="panel-title">Savings Targets</h3>
-                            </div>
-                        </div>
-                        <div class="goal-grid">
-                            <div class="goal-card">
-                                <div class="flex justify-between items-center">
+                        <div class="momentum-grid">
+                            <div class="momentum-card">
+                                <div class="card-icon calendar">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M7 4v2M17 4v2M5 8h14M6 12h2m4 0h2m4 0h2M6 16h2m4 0h2m4 0h2M6 20h12" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <p class="momentum-label">Last 7 days</p>
+                                <div class="weekly-grid">
                                     <div>
-                                        <span class="goal-label">Emergency Fund</span>
-                                        <div class="goal-value" id="goalEmergency">$0 / $0</div>
+                                        <span>Spend</span>
+                                        <strong id="weeklySpend">$0.00</strong>
                                     </div>
-                                    <button class="goal-edit" data-goal="emergency">Edit</button>
-                                </div>
-                                <div class="goal-progress">
-                                    <div class="goal-progress-fill" id="goalEmergencyProgress" style="width:0%"></div>
-                                </div>
-                            </div>
-                            <div class="goal-card">
-                                <div class="flex justify-between items-center">
                                     <div>
-                                        <span class="goal-label">Vacation</span>
-                                        <div class="goal-value" id="goalVacation">$0 / $0</div>
+                                        <span>Save</span>
+                                        <strong id="weeklySave">$0.00</strong>
                                     </div>
-                                    <button class="goal-edit" data-goal="vacation">Edit</button>
-                                </div>
-                                <div class="goal-progress">
-                                    <div class="goal-progress-fill" id="goalVacationProgress" style="width:0%"></div>
-                                </div>
-                            </div>
-                            <div class="goal-card">
-                                <div class="flex justify-between items-center">
                                     <div>
-                                        <span class="goal-label">Investments</span>
-                                        <div class="goal-value" id="goalInvest">$0 / $0</div>
+                                        <span>Invest</span>
+                                        <strong id="weeklyInvest">$0.00</strong>
                                     </div>
-                                    <button class="goal-edit" data-goal="invest">Edit</button>
-                                </div>
-                                <div class="goal-progress">
-                                    <div class="goal-progress-fill" id="goalInvestProgress" style="width:0%"></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="dashboard-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Forecast</p>
-                                <h3 class="panel-title">If you keep this pace...</h3>
-                            </div>
-                        </div>
-                        <div class="forecast-grid">
-                            <div class="forecast-card">
-                                <span>12-month Savings</span>
-                                <strong id="predictionSavingsYear">$0</strong>
-                            </div>
-                            <div class="forecast-card">
-                                <span>5-year Savings</span>
-                                <strong id="predictionSavingsFive">$0</strong>
-                            </div>
-                            <div class="forecast-card">
-                                <span>12-month Investments</span>
-                                <strong id="predictionInvestYear">$0</strong>
-                            </div>
-                            <div class="forecast-card">
-                                <span>5-year Investments (5% APY)</span>
-                                <strong id="predictionInvestFive">$0</strong>
+                            <div class="momentum-card">
+                                <div class="card-icon meter">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 7a7 7 0 0 1 7 7v3H5v-3a7 7 0 0 1 7-7zm0 0v5l3 3" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <p class="momentum-label">Month-to-date totals</p>
+                                <div class="snapshot-inline">
+                                    <div>
+                                        <span>Spend</span>
+                                        <strong id="snapshotSpending">$0.00</strong>
+                                    </div>
+                                    <div>
+                                        <span>Save</span>
+                                        <strong id="snapshotSavings">$0.00</strong>
+                                    </div>
+                                    <div>
+                                        <span>Invest</span>
+                                        <strong id="snapshotInvestments">$0.00</strong>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="dashboard-panel">
+                    <div class="dashboard-panel goals-forecast-panel panel-span-2">
                         <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Key Metrics</p>
-                                <h3 class="panel-title">Financial Highlights</h3>
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--target">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 6v6l4 2M12 3a9 9 0 1 0 9 9" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="panel-eyebrow">Planning</p>
+                                    <h3 class="panel-title">Targets & Trajectory</h3>
+                                </div>
                             </div>
                         </div>
-                        <div class="metric-grid">
-                            <div class="metric-card" data-type="startBalance"></div>
-                            <div class="metric-card" data-type="expectedIncome"></div>
-                            <div class="metric-card" data-type="expectedExpense"></div>
-                            <div class="metric-card" id="netChange"></div>
+                        <div class="goal-forecast-grid">
+                            <div class="goal-stack">
+                                <p class="stack-label">Savings targets</p>
+                                <div class="goal-grid">
+                                    <div class="goal-card">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <span class="goal-label">Emergency Fund</span>
+                                                <div class="goal-value" id="goalEmergency">$0 / $0</div>
+                                            </div>
+                                            <button class="goal-edit" data-goal="emergency">Edit</button>
+                                        </div>
+                                        <div class="goal-progress">
+                                            <div class="goal-progress-fill" id="goalEmergencyProgress" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="goal-card">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <span class="goal-label">Vacation</span>
+                                                <div class="goal-value" id="goalVacation">$0 / $0</div>
+                                            </div>
+                                            <button class="goal-edit" data-goal="vacation">Edit</button>
+                                        </div>
+                                        <div class="goal-progress">
+                                            <div class="goal-progress-fill" id="goalVacationProgress" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="goal-card">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <span class="goal-label">Investments</span>
+                                                <div class="goal-value" id="goalInvest">$0 / $0</div>
+                                            </div>
+                                            <button class="goal-edit" data-goal="invest">Edit</button>
+                                        </div>
+                                        <div class="goal-progress">
+                                            <div class="goal-progress-fill" id="goalInvestProgress" style="width:0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="forecast-stack">
+                                <p class="stack-label">If you keep this pace...</p>
+                                <div class="forecast-grid">
+                                    <div class="forecast-card">
+                                        <span>12-month Savings</span>
+                                        <strong id="predictionSavingsYear">$0</strong>
+                                    </div>
+                                    <div class="forecast-card">
+                                        <span>5-year Savings</span>
+                                        <strong id="predictionSavingsFive">$0</strong>
+                                    </div>
+                                    <div class="forecast-card">
+                                        <span>12-month Investments</span>
+                                        <strong id="predictionInvestYear">$0</strong>
+                                    </div>
+                                    <div class="forecast-card">
+                                        <span>5-year Investments (5% APY)</span>
+                                        <strong id="predictionInvestFive">$0</strong>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="dashboard-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Snapshot</p>
-                                <h3 class="panel-title">Monthly Flow</h3>
-                            </div>
-                        </div>
-                        <div class="snapshot-grid">
-                            <div class="snapshot-card">
-                                <span>Spending</span>
-                                <strong id="snapshotSpending">$0.00</strong>
-                            </div>
-                            <div class="snapshot-card">
-                                <span>Savings</span>
-                                <strong id="snapshotSavings">$0.00</strong>
-                            </div>
-                            <div class="snapshot-card">
-                                <span>Investments</span>
-                                <strong id="snapshotInvestments">$0.00</strong>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-                <div class="xl:col-span-2 space-y-6">
-                    <div class="dashboard-panel">
+                <div class="dashboard-grid-secondary">
+                    <div class="dashboard-panel panel-span-2">
                         <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Visualization</p>
-                                <h3 class="panel-title">Performance Charts</h3>
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--chart">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M5 12v7M12 5v14M19 9v10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="panel-eyebrow">Visualization</p>
+                                    <h3 class="panel-title">Spending & Trends</h3>
+                                </div>
                             </div>
                         </div>
                         <div class="charts-grid">
@@ -297,79 +334,79 @@
                         </div>
                     </div>
 
+                    <div class="dashboard-panel benchmark-panel panel-span-2">
+                        <div class="panel-header">
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--gauge">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M5.5 19a8.5 8.5 0 0 1 13 0M12 13l4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="panel-eyebrow">Financial Benchmarks</p>
+                                    <h3 class="panel-title">Where you stand</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="benchmark-grid">
+                            <div class="metric-card benchmark-highlight" id="netChange"></div>
+                            <div class="metric-card" data-type="startBalance"></div>
+                            <div class="metric-card" data-type="expectedIncome"></div>
+                            <div class="metric-card" data-type="expectedExpense"></div>
+                        </div>
+                    </div>
+
+
+              
+
+                </div>
+            </div>
+
+            <div class="dashboard-row-full">
+                <div class="dashboard-split">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--activity">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M4 6h16M4 12h10M4 18h7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="panel-eyebrow">Activity</p>
+                                    <h3 class="panel-title">Recent Transactions</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="responsive-table">
+                                    <thead>
+                                        <tr class="text-left bg-gray-50 dark:bg-gray-700">
+                                            <th class="px-4 py-2">Date</th>
+                                            <th class="px-4 py-2">Type</th>
+                                            <th class="px-4 py-2">Category</th>
+                                            <th class="px-4 py-2">Amount</th>
+                                            <th class="px-4 py-2">Notes</th>
+                                            <th class="px-4 py-2">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="transactionsTable"></tbody>
+                                </table>
+                            </div>
+                        </div>
 
                     <div class="dashboard-panel">
                         <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Capture</p>
-                                <h3 class="panel-title">Add Transaction</h3>
-                            </div>
-                        </div>
-                        <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Date</label>
-                                <input type="date" id="transactionDate" required class="form-input">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Type</label>
-                                <select id="transactionType" required class="form-select">
-                                    <option value="spend">Spending</option>
-                                    <option value="save">Saving</option>
-                                    <option value="invest">Investment</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Category</label>
-                                <select id="transactionCategory" required class="form-select"></select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1">Amount</label>
-                                <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
-                            </div>
-                            <div class="md:col-span-2 lg:col-span-4">
-                                <div class="flex items-center justify-between mb-1">
-                                    <label class="block text-sm font-medium">Notes</label>
-                                    <button type="button" id="suggestCategoryBtn" class="text-sm font-semibold text-primary hover:underline">Suggest category</button>
+                            <div class="panel-heading">
+                                <div class="panel-icon panel-icon--assistant">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M12 6a4 4 0 014 4v1h1a3 3 0 110 6h-1v1a4 4 0 11-8 0v-1H7a3 3 0 110-6h1v-1a4 4 0 014-4z" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </div>
-                                <textarea id="transactionNotes" class="form-textarea"></textarea>
-                                <p id="suggestCategoryStatus" class="text-xs text-gray-500 dark:text-gray-400 mt-1 hidden"></p>
-                            </div>
-                            <div class="md:col-span-2 lg:col-span-4">
-                                <button type="submit" class="btn-primary w-full md:w-auto">Add Transaction</button>
-                            </div>
-                        </form>
-                    </div>
-
-                <div class="dashboard-panel">
-                    <div class="panel-header">
-                        <div>
-                            <p class="panel-eyebrow">Activity</p>
-                            <h3 class="panel-title">Recent Transactions</h3>
-                        </div>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="responsive-table">
-                                <thead>
-                                    <tr class="text-left bg-gray-50 dark:bg-gray-700">
-                                        <th class="px-4 py-2">Date</th>
-                                        <th class="px-4 py-2">Type</th>
-                                        <th class="px-4 py-2">Category</th>
-                                        <th class="px-4 py-2">Amount</th>
-                                        <th class="px-4 py-2">Notes</th>
-                                        <th class="px-4 py-2">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="transactionsTable"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-
-                                        <div class="dashboard-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="panel-eyebrow">Ask AI</p>
-                                <h3 class="panel-title">Ask Gemini About Your Money</h3>
+                                <div>
+                                    <p class="panel-eyebrow">Ask AI</p>
+                                    <h3 class="panel-title">Ask Gemini About Your Money</h3>
+                                </div>
                             </div>
                         </div>
                         <form id="askAIForm" class="space-y-3">
@@ -384,7 +421,6 @@
                         </form>
                         <div id="askAIResponses" class="mt-4 space-y-3"></div>
                     </div>
-
                 </div>
             </div>
         </section>
@@ -721,6 +757,61 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Transaction Drawer -->
+    <div id="transactionDrawer" class="transaction-drawer" aria-hidden="true">
+        <div id="transactionDrawerOverlay" class="transaction-drawer__overlay" data-close-transaction-drawer></div>
+        <aside class="transaction-drawer__panel" role="dialog" aria-labelledby="transactionDrawerTitle">
+            <div class="transaction-drawer__header">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-primary/80">Quick Capture</p>
+                    <h3 id="transactionDrawerTitle" class="text-xl font-semibold">Log a Transaction</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Add spend, savings, or investments without losing context.</p>
+                </div>
+                <button id="transactionDrawerClose" class="transaction-drawer__close" aria-label="Close transaction drawer" data-close-transaction-drawer>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="transactionForm" class="transaction-form">
+                <div class="form-grid">
+                    <label>
+                        <span>Date</span>
+                        <input type="date" id="transactionDate" required class="form-input">
+                    </label>
+                    <label>
+                        <span>Type</span>
+                        <select id="transactionType" required class="form-select">
+                            <option value="spend">Spending</option>
+                            <option value="save">Saving</option>
+                            <option value="invest">Investment</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Category</span>
+                        <select id="transactionCategory" required class="form-select"></select>
+                    </label>
+                    <label>
+                        <span>Amount</span>
+                        <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
+                    </label>
+                </div>
+                <div class="notes-block">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium">Notes</label>
+                        <button type="button" id="suggestCategoryBtn" class="text-sm font-semibold text-primary hover:underline">Suggest category</button>
+                    </div>
+                    <textarea id="transactionNotes" class="form-textarea" rows="3" placeholder="Grocery haul, TTC pass, etc."></textarea>
+                    <p id="suggestCategoryStatus" class="text-xs text-gray-500 dark:text-gray-400 mt-1 hidden"></p>
+                </div>
+                <div class="transaction-drawer__actions">
+                    <button type="button" class="btn-secondary" data-close-transaction-drawer>Cancel</button>
+                    <button type="submit" class="btn-primary">Save Transaction</button>
+                </div>
+            </form>
+        </aside>
     </div>
 
     <!-- Custom JavaScript -->

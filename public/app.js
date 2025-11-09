@@ -9,7 +9,8 @@ const state = {
     meta: {},
     goals: JSON.parse(localStorage.getItem('financeGoals') || '{}'),
     notificationsEnabled: localStorage.getItem('notificationsEnabled') === 'true',
-    upcomingBills: JSON.parse(localStorage.getItem('upcomingBills') || '[]')
+    upcomingBills: JSON.parse(localStorage.getItem('upcomingBills') || '[]'),
+    previousMonthSnapshot: null
 };
 
 const aiState = {
@@ -328,26 +329,54 @@ function updatePageContent(pageId) {
 }
 
 // Month navigation
+function getOffsetMonth(month, delta) {
+    if (!month && delta === 0) return null;
+    const base = month ? new Date(`${month}-01T00:00:00`) : new Date();
+    base.setUTCDate(15);
+    base.setUTCMonth(base.getUTCMonth() + delta);
+    return base.toISOString().slice(0, 7);
+}
+
+function generateRecentMonths(baseMonth, count = 12) {
+    const months = [];
+    for (let i = 0; i < count; i++) {
+        months.push(getOffsetMonth(baseMonth, -i));
+    }
+    return months;
+}
+
+function populateMonthDropdown() {
+    const select = document.getElementById('monthQuickSelect');
+    if (!select) return;
+    const months = generateRecentMonths(state.currentMonth, 12);
+    select.innerHTML = months.map(month => `
+        <option value="${month}">${formatMonthYear(month)}</option>
+    `).join('');
+    select.value = state.currentMonth;
+}
+
 function initMonthNavigation() {
     document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
     document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+    const monthSelect = document.getElementById('monthQuickSelect');
+    if (monthSelect) {
+        monthSelect.addEventListener('change', (event) => {
+            const selected = event.target.value;
+            if (selected && selected !== state.currentMonth) {
+                state.currentMonth = selected;
+                updateMonthDisplay();
+                loadMonthData();
+            }
+        });
+    }
     updateMonthDisplay();
 }
 
 function initDashboardShortcuts() {
-    document.getElementById('dashboardLogTransaction')?.addEventListener('click', () => {
-        document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    document.querySelector('.quick-add-btn')?.addEventListener('click', () => {
-        document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        document.getElementById('transactionDate')?.focus();
-    });
-
     document.addEventListener('keydown', (event) => {
         if (event.shiftKey && event.key.toLowerCase() === 'a') {
             event.preventDefault();
-            document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.getElementById('transactionDate')?.focus();
+            openTransactionDrawer();
         }
     });
 }
@@ -449,6 +478,7 @@ function updateMonthDisplay() {
     const heroMonthLabel = document.getElementById('heroMonthLabel');
     if (heroMonthLabel) heroMonthLabel.textContent = formatted;
 
+    populateMonthDropdown();
     updateAIContextForMonth();
 }
 
@@ -463,11 +493,20 @@ function updateAIContextForMonth() {
 // Data loading
 async function loadMonthData() {
     try {
-        state.transactions = await api.get(`/entries?month=${state.currentMonth}`);
-        state.categories = await api.get('/categories');
-        state.accounts = await api.get('/accounts');
-        state.budgets = await api.get(`/budgets/${state.currentMonth}`);
-        state.meta = await api.get(`/meta/${state.currentMonth}`);
+        const [transactions, categories, accounts, budgets, meta] = await Promise.all([
+            api.get(`/entries?month=${state.currentMonth}`),
+            api.get('/categories'),
+            api.get('/accounts'),
+            api.get(`/budgets/${state.currentMonth}`),
+            api.get(`/meta/${state.currentMonth}`)
+        ]);
+
+        state.transactions = transactions;
+        state.categories = categories;
+        state.accounts = accounts;
+        state.budgets = budgets || {};
+        state.meta = meta || {};
+        await loadPreviousMonthSnapshot();
         
         // Update all sections
         updateDashboard();
@@ -495,6 +534,25 @@ async function loadMonthData() {
     }
 
     ensureAISummaryForMonth(state.currentMonth);
+}
+
+async function loadPreviousMonthSnapshot() {
+    const previousMonth = getOffsetMonth(state.currentMonth, -1);
+    if (!previousMonth) {
+        state.previousMonthSnapshot = null;
+        return;
+    }
+
+    try {
+        const transactions = await api.get(`/entries?month=${previousMonth}`);
+        state.previousMonthSnapshot = {
+            month: previousMonth,
+            totals: calculateTotals(transactions)
+        };
+    } catch (err) {
+        console.warn('Unable to load previous month snapshot:', err);
+        state.previousMonthSnapshot = null;
+    }
 }
 
 function renderAICoachPanel() {
@@ -716,6 +774,7 @@ async function handleSuggestCategory() {
 function updateDashboard() {
     // Update summary cards
     updateSummaryCards();
+    updateHeroSummary();
     
     updateWeeklyPeek();
     updateDailyStreak();
@@ -1102,9 +1161,72 @@ function updateSummaryCards() {
     document.getElementById('snapshotSavings').textContent = formatMoney(totals.savings);
     document.getElementById('snapshotInvestments').textContent = formatMoney(totals.investments);
 
-    const heroNetChange = document.getElementById('heroNetChange');
-    if (heroNetChange) {
-        heroNetChange.textContent = formatMoney(netChange);
+}
+
+function getNetCashFromTotals(totals) {
+    if (!totals) return 0;
+    return (totals.savings + totals.investments) - totals.spending;
+}
+
+function updateHeroSummary() {
+    const netValueEl = document.getElementById('heroNetCashValue');
+    if (!netValueEl) return;
+
+    const totals = calculateTotals();
+    const netCash = getNetCashFromTotals(totals);
+    netValueEl.textContent = formatMoney(netCash);
+
+    const deltaEl = document.getElementById('heroNetCashDelta');
+    if (deltaEl) {
+        const prevTotals = state.previousMonthSnapshot?.totals;
+        if (prevTotals) {
+            const diff = netCash - getNetCashFromTotals(prevTotals);
+            const symbol = diff >= 0 ? '▲' : '▼';
+            deltaEl.textContent = `${symbol} ${formatMoney(Math.abs(diff))} vs ${formatMonthYear(state.previousMonthSnapshot.month)}`;
+            deltaEl.classList.toggle('positive', diff >= 0);
+            deltaEl.classList.toggle('negative', diff < 0);
+        } else {
+            deltaEl.textContent = 'Baseline month';
+            deltaEl.classList.remove('positive', 'negative');
+        }
+    }
+
+    const spendValueEl = document.getElementById('heroSpendValue');
+    if (spendValueEl) {
+        spendValueEl.textContent = formatMoney(totals.spending);
+    }
+
+    const plan = Number(state.meta.expectedExpense) || 0;
+    const planLabelEl = document.getElementById('heroSpendPlanLabel');
+    const progressEl = document.getElementById('heroSpendProgress');
+    const spendRatio = plan > 0 ? Math.min(100, (totals.spending / plan) * 100) : 0;
+    if (planLabelEl) {
+        planLabelEl.textContent = plan > 0 ? `${spendRatio.toFixed(0)}% of ${formatMoney(plan)} plan` : 'No plan set';
+    }
+    if (progressEl) {
+        progressEl.style.width = `${plan > 0 ? spendRatio : 0}%`;
+    }
+
+    const budgets = state.budgets || {};
+    const totalBudget = Object.values(budgets).reduce((sum, value) => sum + Number(value || 0), 0);
+    const trackedSpend = state.transactions
+        .filter(t => t.type === 'spend' && Object.prototype.hasOwnProperty.call(budgets, t.category))
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+    const utilization = totalBudget > 0 ? Math.min(100, (trackedSpend / totalBudget) * 100) : 0;
+
+    const budgetRing = document.getElementById('heroBudgetRing');
+    if (budgetRing) {
+        budgetRing.style.setProperty('--budget-utilization', `${utilization}%`);
+    }
+    const budgetValueEl = document.getElementById('heroBudgetValue');
+    if (budgetValueEl) {
+        budgetValueEl.textContent = `${Math.round(utilization)}%`;
+    }
+    const budgetLabel = document.getElementById('heroBudgetLabel');
+    if (budgetLabel) {
+        budgetLabel.textContent = totalBudget > 0
+            ? `${formatMoney(trackedSpend)} of ${formatMoney(totalBudget)} tracked`
+            : 'No budgets yet';
     }
 }
 
@@ -1155,8 +1277,8 @@ async function editFinancialExpectation(type) {
     });
 }
 
-function calculateTotals() {
-    return state.transactions.reduce((acc, t) => {
+function calculateTotals(transactions = state.transactions) {
+    return transactions.reduce((acc, t) => {
         const amount = Number(t.amount);
         if (t.type === 'spend') acc.spending += amount;
         else if (t.type === 'save') acc.savings += amount;
@@ -1187,6 +1309,52 @@ function initAISections() {
     renderAskAIHistory();
 }
 
+function openTransactionDrawer() {
+    const drawer = document.getElementById('transactionDrawer');
+    if (!drawer) return;
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('drawer-open');
+    setTimeout(() => {
+        document.getElementById('transactionDate')?.focus();
+    }, 50);
+}
+
+function closeTransactionDrawer() {
+    const drawer = document.getElementById('transactionDrawer');
+    if (!drawer) return;
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('drawer-open');
+}
+
+function initTransactionDrawer() {
+    const drawer = document.getElementById('transactionDrawer');
+    if (!drawer) return;
+
+    const openers = document.querySelectorAll('[data-open-transaction-drawer]');
+    openers.forEach(el => {
+        el.addEventListener('click', (event) => {
+            event.preventDefault();
+            openTransactionDrawer();
+        });
+    });
+
+    const closers = document.querySelectorAll('[data-close-transaction-drawer]');
+    closers.forEach(el => {
+        el.addEventListener('click', (event) => {
+            event.preventDefault();
+            closeTransactionDrawer();
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && drawer.classList.contains('open')) {
+            closeTransactionDrawer();
+        }
+    });
+}
+
 // Transaction management
 function initTransactionForm() {
     document.getElementById('transactionForm').addEventListener('submit', async (e) => {
@@ -1205,6 +1373,7 @@ function initTransactionForm() {
             e.target.reset();
             await loadMonthData();
             triggerConfetti();
+            closeTransactionDrawer();
         } catch (err) {
             console.error('Failed to add transaction:', err);
         }
@@ -1719,6 +1888,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMonthNavigation();
     initDashboardShortcuts();
     initTransactionForm();
+    initTransactionDrawer();
     initAISections();
     initCategories();
     loadMonthData();
