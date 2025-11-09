@@ -1,0 +1,444 @@
+[
+  {
+    "id": "t601",
+    "date": "2025-06-01",
+    "type": "spend",
+    "category": "grocery1",
+    "amount": 145.67,
+    "notes": "Monthly grocery shopping"
+  },
+  {
+    "id": "t602",
+    "date": "2025-06-05",
+    "type": "spend",
+    "category": "restaurant1",
+    "amount": 42.50,
+    "notes": "Dinner out"
+  },
+  {
+    "id": "t603",
+    "date": "2025-06-15",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings"
+  },
+  {
+    "id": "t604",
+    "date": "2025-06-20",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 200.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t701",
+    "date": "2025-07-01",
+    "type": "spend",
+    "category": "grocery1",
+    "amount": 168.92,
+    "notes": "Monthly grocery shopping"
+  },
+  {
+    "id": "t702",
+    "date": "2025-07-10",
+    "type": "spend",
+    "category": "restaurant1",
+    "amount": 55.30,
+    "notes": "Restaurant week"
+  },
+  {
+    "id": "t703",
+    "date": "2025-07-15",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings"
+  },
+  {
+    "id": "t704",
+    "date": "2025-07-20",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 250.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t801",
+    "date": "2025-08-01",
+    "type": "spend",
+    "category": "grocery1",
+    "amount": 172.45,
+    "notes": "Monthly grocery shopping"
+  },
+  {
+    "id": "t802",
+    "date": "2025-08-08",
+    "type": "spend",
+    "category": "restaurant1",
+    "amount": 48.75,
+    "notes": "Dinner with friends"
+  },
+  {
+    "id": "t803",
+    "date": "2025-08-15",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings"
+  },
+  {
+    "id": "t804",
+    "date": "2025-08-20",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 300.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t901",
+    "date": "2025-09-01",
+    "type": "spend",
+    "category": "grocery1",
+    "amount": 159.99,
+    "notes": "Monthly grocery shopping"
+  },
+  {
+    "id": "t902",
+    "date": "2025-09-07",
+    "type": "spend",
+    "category": "restaurant1",
+    "amount": 62.40,
+    "notes": "Weekend dinner"
+  },
+  {
+    "id": "t903",
+    "date": "2025-09-15",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings"
+  },
+  {
+    "id": "t904",
+    "date": "2025-09-20",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 250.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t1001",
+    "date": "2025-10-01",
+    "type": "spend",
+    "category": "grocery1",
+    "amount": 165.30,
+    "notes": "Monthly grocery shopping"
+  },
+  {
+    "id": "t1002",
+    "date": "2025-10-09",
+    "type": "spend",
+    "category": "restaurant1",
+    "amount": 45.80,
+    "notes": "Lunch meeting"
+  },
+  {
+    "id": "t1003",
+    "date": "2025-10-15",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings"
+  },
+  {
+    "id": "t1004",
+    "date": "2025-10-20",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 275.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t1101",
+    "date": "2025-09-03",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 142.35,
+    "notes": "Groceries for the week"
+  },
+  {
+    "id": "t002",
+    "date": "2025-09-05",
+    "type": "spend",
+    "category": "food1",
+    "amount": 58.90,
+    "notes": "Dinner with friends"
+  },
+  {
+    "id": "t003",
+    "date": "2025-09-08",
+    "type": "spend",
+    "category": "commute1",
+    "amount": 128.45,
+    "notes": "Monthly public transit pass"
+  },
+  {
+    "id": "t004",
+    "date": "2025-09-10",
+    "type": "save",
+    "category": "misc1",
+    "amount": 450.00,
+    "notes": "Savings transfer to emergency fund"
+  },
+  {
+    "id": "t005",
+    "date": "2025-09-12",
+    "type": "spend",
+    "category": "shop1",
+    "amount": 76.00,
+    "notes": "Clothing purchase"
+  },
+  {
+    "id": "t006",
+    "date": "2025-09-14",
+    "type": "spend",
+    "category": "fit1",
+    "amount": 54.99,
+    "notes": "Gym membership"
+  },
+  {
+    "id": "t007",
+    "date": "2025-09-16",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 300.00,
+    "notes": "Investment contribution to portfolio"
+  },
+  {
+    "id": "t008",
+    "date": "2025-09-20",
+    "type": "spend",
+    "category": "ride1",
+    "amount": 18.25,
+    "notes": "Ride share trip"
+  },
+  {
+    "id": "t009",
+    "date": "2025-09-22",
+    "type": "spend",
+    "category": "phone1",
+    "amount": 45.20,
+    "notes": "Mobile service bill"
+  },
+  {
+    "id": "t010",
+    "date": "2025-09-28",
+    "type": "spend",
+    "category": "ins1",
+    "amount": 35.00,
+    "notes": "Insurance payment"
+  },
+  {
+    "id": "t011",
+    "date": "2025-09-30",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 93.45,
+    "notes": "Groceries before month end"
+  },
+
+  {
+    "id": "t101",
+    "date": "2025-10-02",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 166.20,
+    "notes": "Groceries and household essentials"
+  },
+  {
+    "id": "t102",
+    "date": "2025-10-03",
+    "type": "spend",
+    "category": "food1",
+    "amount": 39.50,
+    "notes": "Lunch at cafe"
+  },
+  {
+    "id": "t103",
+    "date": "2025-10-05",
+    "type": "save",
+    "category": "misc1",
+    "amount": 400.00,
+    "notes": "Monthly savings transfer"
+  },
+  {
+    "id": "t104",
+    "date": "2025-10-07",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 250.00,
+    "notes": "Investment in index fund"
+  },
+  {
+    "id": "t105",
+    "date": "2025-10-09",
+    "type": "spend",
+    "category": "commute1",
+    "amount": 128.45,
+    "notes": "Monthly public transit pass"
+  },
+  {
+    "id": "t106",
+    "date": "2025-10-12",
+    "type": "spend",
+    "category": "fit1",
+    "amount": 54.99,
+    "notes": "Gym membership renewal"
+  },
+  {
+    "id": "t107",
+    "date": "2025-10-14",
+    "type": "spend",
+    "category": "shop1",
+    "amount": 120.00,
+    "notes": "Shoes and accessories"
+  },
+  {
+    "id": "t108",
+    "date": "2025-10-16",
+    "type": "spend",
+    "category": "ride1",
+    "amount": 24.75,
+    "notes": "Ride share trip home"
+  },
+  {
+    "id": "t109",
+    "date": "2025-10-19",
+    "type": "spend",
+    "category": "phone1",
+    "amount": 45.20,
+    "notes": "Mobile service bill"
+  },
+  {
+    "id": "t110",
+    "date": "2025-10-23",
+    "type": "spend",
+    "category": "ins1",
+    "amount": 35.00,
+    "notes": "Insurance payment"
+  },
+  {
+    "id": "t111",
+    "date": "2025-10-26",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 110.60,
+    "notes": "Weekend grocery run"
+  },
+  {
+    "id": "t112",
+    "date": "2025-10-29",
+    "type": "save",
+    "category": "misc1",
+    "amount": 200.00,
+    "notes": "End of month savings"
+  },
+
+  {
+    "id": "t201",
+    "date": "2025-11-01",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 156.78,
+    "notes": "Weekly groceries from local supermarket"
+  },
+  {
+    "id": "t202",
+    "date": "2025-11-02",
+    "type": "spend",
+    "category": "food1",
+    "amount": 45.99,
+    "notes": "Dinner at a restaurant"
+  },
+  {
+    "id": "t203",
+    "date": "2025-11-03",
+    "type": "spend",
+    "category": "commute1",
+    "amount": 128.45,
+    "notes": "Monthly transit pass"
+  },
+  {
+    "id": "t204",
+    "date": "2025-11-03",
+    "type": "spend",
+    "category": "phone1",
+    "amount": 45.20,
+    "notes": "Mobile service bill"
+  },
+  {
+    "id": "t205",
+    "date": "2025-11-04",
+    "type": "save",
+    "category": "misc1",
+    "amount": 500.00,
+    "notes": "Monthly savings transfer"
+  },
+  {
+    "id": "t206",
+    "date": "2025-11-05",
+    "type": "spend",
+    "category": "shop1",
+    "amount": 89.99,
+    "notes": "Clothing purchase"
+  },
+  {
+    "id": "t207",
+    "date": "2025-11-05",
+    "type": "spend",
+    "category": "fit1",
+    "amount": 54.99,
+    "notes": "Gym membership fee"
+  },
+  {
+    "id": "t208",
+    "date": "2025-11-06",
+    "type": "invest",
+    "category": "misc1",
+    "amount": 200.00,
+    "notes": "Investment contribution"
+  },
+  {
+    "id": "t209",
+    "date": "2025-11-07",
+    "type": "spend",
+    "category": "ride1",
+    "amount": 22.45,
+    "notes": "Ride share trip"
+  },
+  {
+    "id": "t210",
+    "date": "2025-11-07",
+    "type": "spend",
+    "category": "gro1",
+    "amount": 43.55,
+    "notes": "Quick grocery run"
+  },
+  {
+    "id": "t211",
+    "date": "2025-11-08",
+    "type": "spend",
+    "category": "cat1",
+    "amount": 87.65,
+    "notes": "Pet food and supplies"
+  },
+  {
+    "id": "t212",
+    "date": "2025-11-08",
+    "type": "spend",
+    "category": "ins1",
+    "amount": 35.00,
+    "notes": "Monthly insurance payment"
+  }
+]

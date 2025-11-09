@@ -1,0 +1,57 @@
+[
+  {
+    "id": "cat1",
+    "name": "Pets",
+    "color": "#FF6B6B"
+  },
+  {
+    "id": "ride1",
+    "name": "Transport",
+    "color": "#4ECDC4"
+  },
+  {
+    "id": "gro1",
+    "name": "Groceries",
+    "color": "#45B7D1"
+  },
+  {
+    "id": "food1",
+    "name": "Dining Out",
+    "color": "#96CEB4"
+  },
+  {
+    "id": "shop1",
+    "name": "Shopping",
+    "color": "#FFEEAD"
+  },
+  {
+    "id": "phone1",
+    "name": "Phone Bill",
+    "color": "#D4A5A5"
+  },
+  {
+    "id": "ins1",
+    "name": "Insurance",
+    "color": "#9799BA"
+  },
+  {
+    "id": "misc1",
+    "name": "Miscellaneous",
+    "color": "#A8E6CE"
+  },
+  {
+    "id": "commute1",
+    "name": "Public Transit",
+    "color": "#FF8C94"
+  },
+  {
+    "id": "fit1",
+    "name": "Fitness",
+    "color": "#A8E6CF"
+  },
+  {
+    "id": "demo1",
+    "name": "Demo Category",
+    "color": "#a6ff00"
+  }
+]

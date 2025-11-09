@@ -1,0 +1,129 @@
+[
+  {
+    "id": "cash1",
+    "name": "Cash in hand",
+    "currency": "CAD",
+    "classification": "cash",
+    "balances": {
+      "2025-11": {
+        "start": 50,
+        "end": 0,
+        "rate": 1
+      },
+      "2025-10": {
+        "start": 5000,
+        "end": 0,
+        "rate": 1
+      },
+      "2025-08": {
+        "start": 5000,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "scotia1",
+    "name": "Scotiabank checking",
+    "currency": "CAD",
+    "classification": "savings",
+    "balances": {
+      "2025-11": {
+        "start": 6672,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "ws1",
+    "name": "Wealthsimple checking",
+    "currency": "CAD",
+    "classification": "savings",
+    "balances": {
+      "2025-11": {
+        "start": 10440,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "ws_tfsa1",
+    "name": "Wealthsimple TFSA",
+    "currency": "CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 19235,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "ws_rrsp1",
+    "name": "Wealthsimple RRSP",
+    "currency": "CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 4372,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "ws_fhsa1",
+    "name": "Wealthsimple FHSA",
+    "currency": "CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 436,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "ws_crypto1",
+    "name": "Wealthsimple Crypto",
+    "currency": "CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 1804,
+        "end": 0,
+        "rate": 1
+      }
+    }
+  },
+  {
+    "id": "zerodha1",
+    "name": "Zerodha",
+    "currency": "INR→CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 496951,
+        "end": 0,
+        "rate": 0.0165
+      }
+    }
+  },
+  {
+    "id": "coin1",
+    "name": "Coin",
+    "currency": "INR→CAD",
+    "classification": "investment",
+    "balances": {
+      "2025-11": {
+        "start": 191984,
+        "end": 0,
+        "rate": 0.0165
+      }
+    }
+  }
+]

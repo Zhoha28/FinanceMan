@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceMan - Personal Finance Manager</title>
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#6B7280',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-8">
+                    <a href="#" class="text-xl font-bold text-primary">FinanceMan</a>
+                    <div class="hidden md:block">
+                        <div class="flex items-baseline space-x-4">
+                            <a href="#" class="nav-link active" data-page="dashboard">Dashboard</a>
+                            <a href="#" class="nav-link" data-page="budgets">Budgets</a>
+                            <a href="#" class="nav-link" data-page="accounts">Accounts</a>
+                            <a href="#" class="nav-link" data-page="categories">Categories</a>
+                            <a href="#" class="nav-link" data-page="archive">Archive</a>
+                            <a href="#" class="nav-link" data-page="settings">Settings</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="alertsToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                        </svg>
+                        <div id="alertsBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold" id="alertsCount">0</span>
+                        </div>
+                    </button>
+                    <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path class="sun hidden" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                            <path class="moon hidden" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Month Selector -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-4">
+                <button id="prevMonth" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <h2 id="currentMonth" class="text-2xl font-bold"></h2>
+                <button id="nextMonth" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="importBtn" class="btn-secondary">Import CSV</button>
+                <button id="exportBtn" class="btn-secondary">Export CSV</button>
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden">
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="page active">
+            <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card">
+                    <!-- <h3>Starting Balance</h3> -->
+                    <p class="editable" data-type="startBalance">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <!-- <h3>Expected Income</h3> -->
+                    <p class="editable" data-type="expectedIncome">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <!-- <h3>Expected Expense</h3> -->
+                    <p class="editable" data-type="expectedExpense">$0.00</p>
+                </div>
+                <div class="stat-card">
+                    <!-- <h3>Net Change</h3> -->
+                    <p id="netChange">$0.00</p>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="section-card">
+                    <h3 class="text-lg font-semibold mb-4">Spending by Category</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryPieChart"></canvas>
+                        <div id="categoryChartFallback" class="chart-fallback hidden">
+                            No transactions recorded for this month yet.
+                        </div>
+                    </div>
+                </div>
+                <div class="section-card">
+                    <h3 class="text-lg font-semibold mb-4">Monthly Trends</h3>
+                    <div class="chart-container">
+                        <canvas id="monthlyTrendsChart"></canvas>
+                        <div id="trendsChartFallback" class="chart-fallback hidden">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Smart Alerts -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-4">Smart Alerts</h3>
+                <div id="smartAlerts" class="space-y-4"></div>
+            </div>
+
+            <!-- Add Transaction Form -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
+                <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Date</label>
+                        <input type="date" id="transactionDate" required class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Type</label>
+                        <select id="transactionType" required class="form-select">
+                            <option value="spend">Spending</option>
+                            <option value="save">Saving</option>
+                            <option value="invest">Investment</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Category</label>
+                        <select id="transactionCategory" required class="form-select"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Amount</label>
+                        <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <label class="block text-sm font-medium mb-1">Notes</label>
+                        <textarea id="transactionNotes" class="form-textarea"></textarea>
+                    </div>
+                    <div class="md:col-span-2 lg:col-span-4">
+                        <button type="submit" class="btn-primary">Add Transaction</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b dark:border-gray-700">
+                    <h3 class="text-lg font-semibold">Recent Transactions</h3>
+                </div>
+                <div class="p-4">
+                    <div class="flex mb-4">
+                        <input type="text" id="searchTransactions" placeholder="Search transactions..." class="form-input">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="text-left bg-gray-50 dark:bg-gray-700">
+                                    <th class="px-4 py-2">Date</th>
+                                    <th class="px-4 py-2">Type</th>
+                                    <th class="px-4 py-2">Category</th>
+                                    <th class="px-4 py-2">Amount</th>
+                                    <th class="px-4 py-2">Notes</th>
+                                    <th class="px-4 py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Empty space to remove duplicate sections -->
+
+        <!-- Budgets Section -->
+        <section id="budgets" class="page hidden">
+            <h1 class="text-2xl font-bold mb-6">Monthly Budgets</h1>
+            <div class="section-card">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-lg" id="budgetMonthDisplay"></div>
+                    <button id="copyLastMonthBudget" class="btn-secondary">
+                        Copy Last Month's Budgets
+                    </button>
+                </div>
+                <div class="space-y-6" id="budgetsList"></div>
+            </div>
+        </section>
+
+        <!-- Accounts Section -->
+        <section id="accounts" class="page hidden">
+            <h1 class="text-2xl font-bold mb-6">Accounts Management</h1>
+            <div class="section-card mb-6">
+                <h2 class="text-lg font-semibold mb-4">Add New Account</h2>
+                <form id="addAccountForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Account Name</label>
+                        <input type="text" id="newAccountName" required class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Currency Type</label>
+                        <select id="newAccountCurrency" required class="form-select">
+                            <option value="CAD">CAD</option>
+                            <option value="INR→CAD">INR→CAD</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Classification</label>
+                        <select id="newAccountClassification" required class="form-select">
+                            <option value="cash">Cash</option>
+                            <option value="savings">Savings</option>
+                            <option value="investment">Investment</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn-primary">Add Account</button>
+                    </div>
+                </form>
+            </div>
+            <div class="section-card">
+                <h2 class="text-lg font-semibold mb-4">My Accounts</h2>
+                <div class="space-y-6" id="accountsList"></div>
+            </div>
+        </section>
+
+        <!-- Categories Section -->
+        <section id="categories" class="page hidden">
+            <h1 class="text-2xl font-bold mb-6">Categories</h1>
+            <div class="section-card mb-6">
+                <h2 class="text-lg font-semibold mb-4">Add New Category</h2>
+                <form id="addCategoryForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Category Name</label>
+                        <input type="text" id="newCategoryName" required class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Color</label>
+                        <input type="color" id="newCategoryColor" required class="h-10 w-full">
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="btn-primary">Add Category</button>
+                    </div>
+                </form>
+            </div>
+            <div class="section-card">
+                <h2 class="text-lg font-semibold mb-4">My Categories</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categoriesList"></div>
+            </div>
+        </section>
+
+        <!-- Archive Section -->
+        <section id="archive" class="page hidden">
+            <h1 class="text-2xl font-bold mb-6">Monthly Archive</h1>
+            <div class="space-y-4" id="archiveList">
+                <!-- Archive months will be inserted here -->
+            </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settings" class="page hidden">
+            <h1 class="text-2xl font-bold mb-6">Settings</h1>
+            
+            <!-- Theme Settings -->
+            <div class="section-card mb-6">
+                <h2 class="text-lg font-semibold mb-4">Theme Preferences</h2>
+                <div class="space-y-4">
+                    <label class="flex items-center space-x-2">
+                        <input type="checkbox" id="darkModeToggle" class="form-checkbox">
+                        <span>Dark Mode</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Data Management -->
+            <div class="section-card">
+                <h2 class="text-lg font-semibold mb-4">Data Management</h2>
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <h3 class="font-medium">Transaction Data</h3>
+                        <div class="flex space-x-4">
+                            <button id="exportTransactionsBtn" class="btn-secondary">
+                                Export Transactions (CSV)
+                            </button>
+                            <label class="btn-secondary cursor-pointer">
+                                Import Transactions (CSV)
+                                <input type="file" id="importTransactionsInput" accept=".csv" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <h3 class="font-medium">Backup & Restore</h3>
+                        <div class="flex space-x-4">
+                            <button id="backupDataBtn" class="btn-secondary">Backup All Data</button>
+                            <label class="btn-secondary cursor-pointer">
+                                Restore from Backup
+                                <input type="file" id="restoreDataInput" accept=".zip" class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Template -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6">
+                <h3 id="modalTitle" class="text-lg font-semibold mb-4"></h3>
+                <div id="modalContent"></div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button id="modalCancel" class="btn-secondary">Cancel</button>
+                    <button id="modalConfirm" class="btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom JavaScript -->
+    <script src="app.js"></script>
+</body>
+</html>

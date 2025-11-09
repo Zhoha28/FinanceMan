@@ -1,0 +1,7 @@
+{
+  "2025-11": {
+    "startBalance": 10000,
+    "expectedIncome": 4000,
+    "expectedExpense": 3000
+  }
+}
