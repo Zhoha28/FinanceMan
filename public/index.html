@@ -34,29 +34,33 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
     <!-- Navigation -->
-    <nav class="bg-white dark:bg-gray-800 shadow-md">
+    <nav class="primary-nav bg-white/90 dark:bg-gray-900/85 shadow-lg backdrop-blur-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-8">
-                    <a href="#" class="text-xl font-bold text-primary">FinanceMan</a>
-                    <div class="hidden md:block">
-                        <div class="flex items-baseline space-x-4">
-                            <a href="#" class="nav-link active" data-page="dashboard">Dashboard</a>
-                            <a href="#" class="nav-link" data-page="budgets">Budgets</a>
-                            <a href="#" class="nav-link" data-page="accounts">Accounts</a>
-                            <a href="#" class="nav-link" data-page="categories">Categories</a>
-                            <a href="#" class="nav-link" data-page="archive">Archive</a>
-                            <a href="#" class="nav-link" data-page="settings">Settings</a>
+            <div class="flex items-center justify-between h-16 gap-4">
+                <div class="flex items-center gap-6">
+                    <a href="#" class="brand-mark">FinanceMan</a>
+                    <button class="mobile-nav-toggle md:hidden" aria-label="Toggle navigation" aria-expanded="false">
+                        <span></span><span></span><span></span>
+                    </button>
+                    <div class="nav-links">
+                        <div class="nav-pill" data-pill>
+                            <span></span>
                         </div>
+                        <a href="#" class="nav-link active" data-page="dashboard">Dashboard</a>
+                        <a href="#" class="nav-link" data-page="budgets">Budgets</a>
+                        <a href="#" class="nav-link" data-page="accounts">Accounts</a>
+                        <a href="#" class="nav-link" data-page="categories">Categories</a>
+                        <a href="#" class="nav-link" data-page="archive">Archive</a>
+                        <a href="#" class="nav-link" data-page="settings">Settings</a>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <button id="alertsToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative">
+                <div class="flex items-center gap-3">
+                    <button id="insightsToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative" aria-label="View financial insights">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                         </svg>
-                        <div id="alertsBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                            <span class="text-white text-xs font-bold" id="alertsCount">0</span>
+                        <div id="insightsBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                            <span class="text-white text-xs font-bold" id="insightsCount">0</span>
                         </div>
                     </button>
                     <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
@@ -95,112 +99,189 @@
         </div>
 
         <!-- Dashboard Section -->
-        <section id="dashboard" class="page active">
-            <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-            <!-- Summary Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="stat-card">
-                    <!-- <h3>Starting Balance</h3> -->
-                    <p class="editable" data-type="startBalance">$0.00</p>
+        <section id="dashboard" class="page active space-y-8">
+            <button class="quick-add-btn" aria-label="Add transaction quickly">
+                <span>+</span>
+            </button>
+
+            <div class="dashboard-hero">
+                <div class="hero-copy">
+                    <p class="hero-eyebrow">Monthly Overview</p>
+                    <h1 class="hero-title">Financial Command Center</h1>
+                    <p class="hero-subtitle">Track, act, and optimize your finances for <span id="heroMonthLabel">this month</span>.</p>
+                    <div class="hero-actions">
+                        <button id="dashboardLogTransaction" class="btn-primary">Log a Transaction</button>
+                        <button id="insightsQuickLaunch" class="btn-secondary">Open Insight Center</button>
+                    </div>
                 </div>
-                <div class="stat-card">
-                    <!-- <h3>Expected Income</h3> -->
-                    <p class="editable" data-type="expectedIncome">$0.00</p>
-                </div>
-                <div class="stat-card">
-                    <!-- <h3>Expected Expense</h3> -->
-                    <p class="editable" data-type="expectedExpense">$0.00</p>
-                </div>
-                <div class="stat-card">
-                    <!-- <h3>Net Change</h3> -->
-                    <p id="netChange">$0.00</p>
+                <div class="hero-pills">
+                    <div class="hero-pill">
+                        <span class="pill-label">Current Month</span>
+                        <span class="pill-value" id="heroMonthValue">-</span>
+                    </div>
+                    <div class="hero-pill">
+                        <span class="pill-label">Net Change</span>
+                        <span class="pill-value" id="heroNetChange">$0.00</span>
+                    </div>
+                    <div class="hero-pill">
+                        <span class="pill-label">Signals</span>
+                        <span class="pill-value" id="heroSignals">0 insights</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <div class="section-card">
-                    <h3 class="text-lg font-semibold mb-4">Spending by Category</h3>
-                    <div class="chart-container">
-                        <canvas id="categoryPieChart"></canvas>
-                        <div id="categoryChartFallback" class="chart-fallback hidden">
-                            No transactions recorded for this month yet.
+            <div class="dashboard-grid">
+                <div class="space-y-6">
+                    <div class="dashboard-panel weekly-peek">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Weekly Peek</p>
+                                <h3 class="panel-title">Last 7 Days</h3>
+                            </div>
+                        </div>
+                        <div class="weekly-grid">
+                            <div>
+                                <span>Spend</span>
+                                <strong id="weeklySpend">$0.00</strong>
+                            </div>
+                            <div>
+                                <span>Save</span>
+                                <strong id="weeklySave">$0.00</strong>
+                            </div>
+                            <div>
+                                <span>Invest</span>
+                                <strong id="weeklyInvest">$0.00</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Key Metrics</p>
+                                <h3 class="panel-title">Financial Highlights</h3>
+                            </div>
+                        </div>
+                        <div class="metric-grid">
+                            <div class="metric-card" data-type="startBalance"></div>
+                            <div class="metric-card" data-type="expectedIncome"></div>
+                            <div class="metric-card" data-type="expectedExpense"></div>
+                            <div class="metric-card" id="netChange"></div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Snapshot</p>
+                                <h3 class="panel-title">Monthly Flow</h3>
+                            </div>
+                        </div>
+                        <div class="snapshot-grid">
+                            <div class="snapshot-card">
+                                <span>Spending</span>
+                                <strong id="snapshotSpending">$0.00</strong>
+                            </div>
+                            <div class="snapshot-card">
+                                <span>Savings</span>
+                                <strong id="snapshotSavings">$0.00</strong>
+                            </div>
+                            <div class="snapshot-card">
+                                <span>Investments</span>
+                                <strong id="snapshotInvestments">$0.00</strong>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="section-card">
-                    <h3 class="text-lg font-semibold mb-4">Monthly Trends</h3>
-                    <div class="chart-container">
-                        <canvas id="monthlyTrendsChart"></canvas>
-                        <div id="trendsChartFallback" class="chart-fallback hidden">
+
+                <div class="xl:col-span-2 space-y-6">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Visualization</p>
+                                <h3 class="panel-title">Performance Charts</h3>
+                            </div>
+                        </div>
+                        <div class="charts-grid">
+                            <div class="chart-card">
+                                <div class="chart-title">Spending by Category</div>
+                                <div class="chart-container">
+                                    <canvas id="categoryPieChart"></canvas>
+                                    <div id="categoryChartFallback" class="chart-fallback hidden">
+                                        No transactions recorded for this month yet.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chart-card">
+                                <div class="chart-title">Monthly Trends</div>
+                                <div class="chart-container">
+                                    <canvas id="monthlyTrendsChart"></canvas>
+                                    <div id="trendsChartFallback" class="chart-fallback hidden"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Smart Alerts -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Smart Alerts</h3>
-                <div id="smartAlerts" class="space-y-4"></div>
-            </div>
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <div>
+                                <p class="panel-eyebrow">Capture</p>
+                                <h3 class="panel-title">Add Transaction</h3>
+                            </div>
+                        </div>
+                        <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Date</label>
+                                <input type="date" id="transactionDate" required class="form-input">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Type</label>
+                                <select id="transactionType" required class="form-select">
+                                    <option value="spend">Spending</option>
+                                    <option value="save">Saving</option>
+                                    <option value="invest">Investment</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Category</label>
+                                <select id="transactionCategory" required class="form-select"></select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Amount</label>
+                                <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-4">
+                                <label class="block text-sm font-medium mb-1">Notes</label>
+                                <textarea id="transactionNotes" class="form-textarea"></textarea>
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-4">
+                                <button type="submit" class="btn-primary w-full md:w-auto">Add Transaction</button>
+                            </div>
+                        </form>
+                    </div>
 
-            <!-- Add Transaction Form -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Add Transaction</h3>
-                <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Date</label>
-                        <input type="date" id="transactionDate" required class="form-input">
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <div>
+                            <p class="panel-eyebrow">Activity</p>
+                            <h3 class="panel-title">Recent Transactions</h3>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Type</label>
-                        <select id="transactionType" required class="form-select">
-                            <option value="spend">Spending</option>
-                            <option value="save">Saving</option>
-                            <option value="invest">Investment</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Category</label>
-                        <select id="transactionCategory" required class="form-select"></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-1">Amount</label>
-                        <input type="number" id="transactionAmount" required min="0" step="0.01" class="form-input">
-                    </div>
-                    <div class="md:col-span-2 lg:col-span-4">
-                        <label class="block text-sm font-medium mb-1">Notes</label>
-                        <textarea id="transactionNotes" class="form-textarea"></textarea>
-                    </div>
-                    <div class="md:col-span-2 lg:col-span-4">
-                        <button type="submit" class="btn-primary">Add Transaction</button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Transactions Table -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                <div class="p-4 border-b dark:border-gray-700">
-                    <h3 class="text-lg font-semibold">Recent Transactions</h3>
-                </div>
-                <div class="p-4">
-                    <div class="flex mb-4">
-                        <input type="text" id="searchTransactions" placeholder="Search transactions..." class="form-input">
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full">
-                            <thead>
-                                <tr class="text-left bg-gray-50 dark:bg-gray-700">
-                                    <th class="px-4 py-2">Date</th>
-                                    <th class="px-4 py-2">Type</th>
-                                    <th class="px-4 py-2">Category</th>
-                                    <th class="px-4 py-2">Amount</th>
-                                    <th class="px-4 py-2">Notes</th>
-                                    <th class="px-4 py-2">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="transactionsTable"></tbody>
-                        </table>
+                    <div class="table-scroll">
+                        <table class="responsive-table">
+                                <thead>
+                                    <tr class="text-left bg-gray-50 dark:bg-gray-700">
+                                        <th class="px-4 py-2">Date</th>
+                                        <th class="px-4 py-2">Type</th>
+                                        <th class="px-4 py-2">Category</th>
+                                        <th class="px-4 py-2">Amount</th>
+                                        <th class="px-4 py-2">Notes</th>
+                                        <th class="px-4 py-2">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTable"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -209,24 +290,49 @@
         <!-- Empty space to remove duplicate sections -->
 
         <!-- Budgets Section -->
-        <section id="budgets" class="page hidden">
-            <h1 class="text-2xl font-bold mb-6">Monthly Budgets</h1>
-            <div class="section-card">
-                <div class="flex justify-between items-center mb-6">
-                    <div class="text-lg" id="budgetMonthDisplay"></div>
-                    <button id="copyLastMonthBudget" class="btn-secondary">
-                        Copy Last Month's Budgets
-                    </button>
+        <section id="budgets" class="page hidden space-y-8">
+            <div class="section-hero budgets-hero">
+                <div>
+                    <p class="hero-eyebrow">Planning Toolkit</p>
+                    <h1 class="hero-title">Monthly Budgets</h1>
+                    <p class="hero-subtitle">Adjust envelopes for <span id="budgetMonthDisplay" class="hero-highlight"></span> and stay intentional.</p>
                 </div>
-                <div class="space-y-6" id="budgetsList"></div>
+                <div class="hero-actions">
+                    <button id="copyLastMonthBudget" class="btn-secondary">Copy Last Month</button>
+                </div>
+            </div>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Allocations</p>
+                        <h3 class="panel-title">Category Controls</h3>
+                    </div>
+                </div>
+                <div id="budgetsList" class="budget-grid"></div>
             </div>
         </section>
 
         <!-- Accounts Section -->
-        <section id="accounts" class="page hidden">
-            <h1 class="text-2xl font-bold mb-6">Accounts Management</h1>
-            <div class="section-card mb-6">
-                <h2 class="text-lg font-semibold mb-4">Add New Account</h2>
+        <section id="accounts" class="page hidden space-y-8">
+            <div class="section-hero accounts-hero">
+                <div>
+                    <p class="hero-eyebrow">Cash Position</p>
+                    <h1 class="hero-title">Accounts HQ</h1>
+                    <p class="hero-subtitle">Keep every balance, currency, and platform aligned.</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-secondary" onclick="document.getElementById('addAccountForm').scrollIntoView({ behavior: 'smooth' })">
+                        Add Account
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Create</p>
+                        <h3 class="panel-title">Add New Account</h3>
+                    </div>
+                </div>
                 <form id="addAccountForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Account Name</label>
@@ -249,21 +355,42 @@
                         </select>
                     </div>
                     <div class="md:col-span-2">
-                        <button type="submit" class="btn-primary">Add Account</button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">Add Account</button>
                     </div>
                 </form>
             </div>
-            <div class="section-card">
-                <h2 class="text-lg font-semibold mb-4">My Accounts</h2>
-                <div class="space-y-6" id="accountsList"></div>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Portfolio</p>
+                        <h3 class="panel-title">My Accounts</h3>
+                    </div>
+                </div>
+                <div id="accountsList" class="account-grid"></div>
             </div>
         </section>
 
         <!-- Categories Section -->
-        <section id="categories" class="page hidden">
-            <h1 class="text-2xl font-bold mb-6">Categories</h1>
-            <div class="section-card mb-6">
-                <h2 class="text-lg font-semibold mb-4">Add New Category</h2>
+        <section id="categories" class="page hidden space-y-8">
+            <div class="section-hero categories-hero">
+                <div>
+                    <p class="hero-eyebrow">Spending Map</p>
+                    <h1 class="hero-title">Categories</h1>
+                    <p class="hero-subtitle">Describe your life with color and stay organized.</p>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn-secondary" onclick="document.getElementById('addCategoryForm').scrollIntoView({ behavior: 'smooth' })">
+                        New Category
+                    </button>
+                </div>
+            </div>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Create</p>
+                        <h3 class="panel-title">Add New Category</h3>
+                    </div>
+                </div>
                 <form id="addCategoryForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">Category Name</label>
@@ -274,31 +401,60 @@
                         <input type="color" id="newCategoryColor" required class="h-10 w-full">
                     </div>
                     <div class="md:col-span-2">
-                        <button type="submit" class="btn-primary">Add Category</button>
+                        <button type="submit" class="btn-primary w-full md:w-auto">Add Category</button>
                     </div>
                 </form>
             </div>
-            <div class="section-card">
-                <h2 class="text-lg font-semibold mb-4">My Categories</h2>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Library</p>
+                        <h3 class="panel-title">My Categories</h3>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="categoriesList"></div>
             </div>
         </section>
 
         <!-- Archive Section -->
-        <section id="archive" class="page hidden">
-            <h1 class="text-2xl font-bold mb-6">Monthly Archive</h1>
-            <div class="space-y-4" id="archiveList">
-                <!-- Archive months will be inserted here -->
+        <section id="archive" class="page hidden space-y-8">
+            <div class="section-hero archive-hero">
+                <div>
+                    <p class="hero-eyebrow">Time Machine</p>
+                    <h1 class="hero-title">Monthly Archive</h1>
+                    <p class="hero-subtitle">Review every prior month, anytime.</p>
+                </div>
+            </div>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">History</p>
+                        <h3 class="panel-title">All Months</h3>
+                    </div>
+                </div>
+                <div class="space-y-4" id="archiveList">
+                    <!-- Archive months will be inserted here -->
+                </div>
             </div>
         </section>
 
         <!-- Settings Section -->
-        <section id="settings" class="page hidden">
-            <h1 class="text-2xl font-bold mb-6">Settings</h1>
+        <section id="settings" class="page hidden space-y-8">
+            <div class="section-hero settings-hero">
+                <div>
+                    <p class="hero-eyebrow">Workspace</p>
+                    <h1 class="hero-title">Settings</h1>
+                    <p class="hero-subtitle">Tune preferences, theme, and backups.</p>
+                </div>
+            </div>
             
-            <!-- Theme Settings -->
-            <div class="section-card mb-6">
-                <h2 class="text-lg font-semibold mb-4">Theme Preferences</h2>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Appearance</p>
+                        <h3 class="panel-title">Theme Preferences</h3>
+                    </div>
+                </div>
                 <div class="space-y-4">
                     <label class="flex items-center space-x-2">
                         <input type="checkbox" id="darkModeToggle" class="form-checkbox">
@@ -307,13 +463,17 @@
                 </div>
             </div>
             
-            <!-- Data Management -->
-            <div class="section-card">
-                <h2 class="text-lg font-semibold mb-4">Data Management</h2>
+            <div class="dashboard-panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="panel-eyebrow">Data</p>
+                        <h3 class="panel-title">Data Management</h3>
+                    </div>
+                </div>
                 <div class="space-y-6">
                     <div class="space-y-2">
                         <h3 class="font-medium">Transaction Data</h3>
-                        <div class="flex space-x-4">
+                        <div class="flex flex-wrap gap-4">
                             <button id="exportTransactionsBtn" class="btn-secondary">
                                 Export Transactions (CSV)
                             </button>
@@ -326,7 +486,7 @@
                     
                     <div class="space-y-2">
                         <h3 class="font-medium">Backup & Restore</h3>
-                        <div class="flex space-x-4">
+                        <div class="flex flex-wrap gap-4">
                             <button id="backupDataBtn" class="btn-secondary">Backup All Data</button>
                             <label class="btn-secondary cursor-pointer">
                                 Restore from Backup
@@ -338,6 +498,56 @@
             </div>
         </section>
     </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p>Made with love by Zhoha</p>
+            <div class="footer-links">
+                <a href="https://www.linkedin.com/in/zhohadamani/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M19 0h-14C2.2 0 0 2.2 0 5v14c0 2.8 2.2 5 5 5h14c2.8 0 5-2.2 5-5V5c0-2.8-2.2-5-5-5zm-9 19H7v-8h3v8zm-1.5-9.2c-1 0-1.8-.8-1.8-1.8S7.5 6.2 8.5 6.2s1.8.8 1.8 1.8-.9 1.8-1.8 1.8zm11.5 9.2h-3v-4.4c0-1-.4-1.6-1.3-1.6-.8 0-1.2.6-1.4 1.1-.1.2-.1.5-.1.8V19h-3s.1-7.3 0-8h3v1.1c.4-.6 1-1.4 2.5-1.4 1.8 0 3.2 1.2 3.2 3.7V19z"/>
+                    </svg>
+                    LinkedIn
+                </a>
+                <a href="https://zhohadamani.info/" target="_blank" rel="noopener" aria-label="Website">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 2c1.93 0 3.68.78 4.95 2.05l-2.12 2.12A3.99 3.99 0 0012 7a4 4 0 000 8c.88 0 1.69-.29 2.33-.78l2.12 2.11A7.96 7.96 0 0112 20c-4.42 0-8-3.58-8-8s3.58-8 8-8zm5 8l3 3-1.41 1.41-3-3z"/>
+                    </svg>
+                    Portfolio
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Insight Center Sidebar -->
+    <div id="insightsSidebar" class="insights-sidebar" aria-hidden="true">
+        <div id="insightsOverlay" class="insights-overlay"></div>
+        <aside class="insights-drawer" role="dialog" aria-labelledby="insightsTitle">
+            <div class="insights-header">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-primary/80">Financial Pulse</p>
+                    <h3 id="insightsTitle" class="text-2xl font-semibold">Insight Center</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Live guidance based on this month's activity</p>
+                </div>
+                <button id="insightsClose" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Close insights">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="insights-summary">
+                <div class="insight-pill">
+                    <span class="pill-label">Month</span>
+                    <span id="insightsMonth" class="pill-value"></span>
+                </div>
+                <div class="insight-pill">
+                    <span class="pill-label">Signals</span>
+                    <span id="insightsTotal" class="pill-value">0</span>
+                </div>
+            </div>
+            <div id="insightsList" class="insights-list space-y-4"></div>
+        </aside>
+    </div>
 
     <!-- Modal Template -->
     <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">

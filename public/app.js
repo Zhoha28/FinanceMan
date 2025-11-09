@@ -15,6 +15,8 @@ const chartInstances = {
     category: null
 };
 
+let insightsSidebarOpen = false;
+
 // API functions
 const api = {
     async get(endpoint) {
@@ -102,14 +104,47 @@ function formatMonthYear(yearMonth) {
     });
 }
 
+
 // Navigation and routing
 function initNavigation() {
-    document.querySelectorAll('.nav-link').forEach(link => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinksContainer = document.querySelector('.nav-links');
+    const mobileToggle = document.querySelector('.mobile-nav-toggle');
+
+    navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = e.currentTarget.dataset.page;
             navigateToPage(page);
+            if (window.innerWidth < 768 && navLinksContainer && mobileToggle) {
+                navLinksContainer.classList.remove('open');
+                mobileToggle.setAttribute('aria-expanded', 'false');
+            }
         });
+    });
+
+    if (mobileToggle && navLinksContainer) {
+        mobileToggle.addEventListener('click', () => {
+            const expanded = mobileToggle.getAttribute('aria-expanded') === 'true';
+            mobileToggle.setAttribute('aria-expanded', (!expanded).toString());
+            navLinksContainer.classList.toggle('open', !expanded);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!navLinksContainer.contains(event.target) && !mobileToggle.contains(event.target)) {
+                navLinksContainer.classList.remove('open');
+                mobileToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    }
+
+    window.addEventListener('resize', () => {
+        if (navLinksContainer && mobileToggle && window.innerWidth >= 768) {
+            navLinksContainer.classList.remove('open');
+            mobileToggle.setAttribute('aria-expanded', 'false');
+        }
+        const activeLink = document.querySelector('.nav-link.active');
+        moveNavPill(activeLink);
     });
 
     // Handle browser back/forward
@@ -159,6 +194,7 @@ function showPage(pageId) {
         selectedPage.classList.add('active');
         selectedPage.style.display = 'block';
         selectedLink.classList.add('active');
+        moveNavPill(selectedLink);
         
         // Trigger page-specific updates
         updatePageContent(pageId);
@@ -169,6 +205,56 @@ function showPage(pageId) {
         // console.log('Available pages:', Array.from(document.querySelectorAll('.page')).map(p => p.id)); // Debug log
         // console.log('Available nav links:', Array.from(document.querySelectorAll('.nav-link')).map(l => l.dataset.page)); // Debug log
     }
+}
+
+function moveNavPill(activeLink) {
+    const pill = document.querySelector('[data-pill] span');
+    if (!pill) return;
+
+    if (window.innerWidth < 768 || !activeLink) {
+        pill.style.opacity = 0;
+        return;
+    }
+
+    const linkRect = activeLink.getBoundingClientRect();
+    const navRect = activeLink.parentElement.getBoundingClientRect();
+    const left = linkRect.left - navRect.left;
+
+    pill.style.opacity = 1;
+    pill.style.width = `${linkRect.width + 16}px`;
+    pill.style.transform = `translate(${left - 8}px, -50%)`;
+}
+
+function initInsightsSidebar() {
+    const sidebar = document.getElementById('insightsSidebar');
+    const toggleButton = document.getElementById('insightsToggle');
+    if (!sidebar || !toggleButton) return;
+
+    const overlay = document.getElementById('insightsOverlay');
+    const closeButton = document.getElementById('insightsClose');
+    const quickLaunchButton = document.getElementById('insightsQuickLaunch');
+
+    const setSidebarState = (isOpen) => {
+        insightsSidebarOpen = isOpen;
+        sidebar.classList.toggle('open', isOpen);
+        sidebar.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+    };
+
+    toggleButton.addEventListener('click', () => {
+        setSidebarState(!insightsSidebarOpen);
+    });
+
+    overlay?.addEventListener('click', () => setSidebarState(false));
+    closeButton?.addEventListener('click', () => setSidebarState(false));
+    quickLaunchButton?.addEventListener('click', () => setSidebarState(true));
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && insightsSidebarOpen) {
+            setSidebarState(false);
+        }
+    });
+
+    setSidebarState(false);
 }
 
 // Page-specific content updates
@@ -199,6 +285,16 @@ function initMonthNavigation() {
     updateMonthDisplay();
 }
 
+function initDashboardShortcuts() {
+    document.getElementById('dashboardLogTransaction')?.addEventListener('click', () => {
+        document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    document.querySelector('.quick-add-btn')?.addEventListener('click', () => {
+        document.getElementById('transactionForm')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('transactionDate')?.focus();
+    });
+}
+
 function changeMonth(delta) {
     const date = new Date(`${state.currentMonth}-01`);
     date.setMonth(date.getMonth() + delta);
@@ -208,7 +304,13 @@ function changeMonth(delta) {
 }
 
 function updateMonthDisplay() {
-    document.getElementById('currentMonth').textContent = formatMonthYear(state.currentMonth);
+    const formatted = formatMonthYear(state.currentMonth);
+    document.getElementById('currentMonth').textContent = formatted;
+    const heroMonthValue = document.getElementById('heroMonthValue');
+    if (heroMonthValue) heroMonthValue.textContent = formatted;
+
+    const heroMonthLabel = document.getElementById('heroMonthLabel');
+    if (heroMonthLabel) heroMonthLabel.textContent = formatted;
 }
 
 // Data loading
@@ -227,7 +329,7 @@ async function loadMonthData() {
         updateAccounts();
         updateCategories();
         updateCharts();
-        updateSmartAlerts();
+        updateInsights();
         
         // If we're on the archive page, load archive data
         if (document.querySelector('.nav-link[data-page="archive"].active')) {
@@ -248,11 +350,38 @@ function updateDashboard() {
     // Update summary cards
     updateSummaryCards();
     
+    updateWeeklyPeek();
+
     // Update category select in transaction form
     const categorySelect = document.getElementById('transactionCategory');
     categorySelect.innerHTML = state.categories.map(cat => 
         `<option value="${cat.id}" style="color: ${cat.color}">${cat.name}</option>`
     ).join('');
+}
+
+function updateWeeklyPeek() {
+    const spendEl = document.getElementById('weeklySpend');
+    const saveEl = document.getElementById('weeklySave');
+    const investEl = document.getElementById('weeklyInvest');
+    if (!spendEl || !saveEl || !investEl) return;
+
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - 7);
+
+    const weeklyTotals = state.transactions.reduce((acc, tx) => {
+        const txDate = new Date(tx.date);
+        if (txDate >= cutoff && txDate <= now) {
+            if (tx.type === 'spend') acc.spending += Number(tx.amount);
+            if (tx.type === 'save') acc.savings += Number(tx.amount);
+            if (tx.type === 'invest') acc.investments += Number(tx.amount);
+        }
+        return acc;
+    }, { spending: 0, savings: 0, investments: 0 });
+
+    spendEl.textContent = formatMoney(weeklyTotals.spending);
+    saveEl.textContent = formatMoney(weeklyTotals.savings);
+    investEl.textContent = formatMoney(weeklyTotals.investments);
 }
 
 // Budgets management
@@ -269,91 +398,54 @@ function updateBudgets() {
             .filter(t => t.type === 'spend' && t.category === category.id)
             .reduce((sum, t) => sum + Number(t.amount), 0);
         
-        const percentage = budget > 0 ? (spending / budget) * 100 : 0;
-        const status = percentage >= 100 ? 'over' : percentage >= 80 ? 'near' : 'under';
+        const utilization = budget > 0 ? (spending / budget) * 100 : 0;
+        let status = 'under';
+        if (budget === 0 && spending > 0) {
+            status = 'over';
+        } else if (utilization >= 100) {
+            status = 'over';
+        } else if (utilization >= 80) {
+            status = 'near';
+        }
         const remaining = budget - spending;
-        
-        const budgetItem = document.createElement('div');
-        budgetItem.className = 'space-y-2';
-        budgetItem.innerHTML = `
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <span class="w-4 h-4 rounded-full" style="background-color: ${category.color}"></span>
-                    <span class="font-medium">${category.name}</span>
-                </div>
-                <input type="number" 
-                    value="${budget}"
-                    min="0" 
-                    step="1"
-                    class="form-input w-32"
-                    onchange="updateCategoryBudget('${category.id}', this.value)">
-            </div>
-            <div class="budget-progress">
-                <div class="budget-progress-bar ${status}"
-                    style="width: ${Math.min(percentage, 100)}%"></div>
-            </div>
-            <div class="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                <span>Spent: ${formatMoney(spending)}</span>
-                <span>Budget: ${formatMoney(budget)}</span>
-            </div>
-        `;
+        const statusLabel = status === 'over' ? 'Over budget' : status === 'near' ? 'Close to limit' : 'On track';
+        const remainingText = remaining >= 0 ? `${formatMoney(remaining)} left` : `${formatMoney(Math.abs(remaining))} over`;
+        const utilizationLabel = budget > 0 ? `${Math.min(utilization, 999).toFixed(0)}% used` : (spending > 0 ? 'No budget set' : 'No activity yet');
+        const progressWidth = budget > 0 ? Math.min(utilization, 100) : (spending > 0 ? 100 : 0);
         
         const budgetCard = document.createElement('div');
-        budgetCard.className = 'section-card p-4';
+        budgetCard.className = `budget-card ${status}`;
         budgetCard.innerHTML = `
-            <div class="flex flex-col space-y-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center" 
-                            style="background-color: ${category.color}20">
-                            <span class="w-6 h-6 rounded-full" 
-                                style="background-color: ${category.color}"></span>
-                        </div>
-                        <span class="text-lg font-medium dark:text-white">${category.name}</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm text-gray-500 dark:text-gray-400">Budget:</span>
-                        <input type="number" 
+            <div class="budget-card-header">
+                <div class="category-chip">
+                    <span class="chip-dot" style="background-color: ${category.color}"></span>
+                    <span>${category.name}</span>
+                </div>
+                <span class="budget-status ${status}">${statusLabel}</span>
+            </div>
+            <div class="budget-amounts">
+                <div class="budget-figure">
+                    <span>Spent</span>
+                    <strong>${formatMoney(spending)}</strong>
+                </div>
+                <div class="budget-figure">
+                    <span>Budget</span>
+                    <div class="budget-input-wrapper">
+                        <input type="number"
                             value="${budget}"
-                            min="0" 
+                            min="0"
                             step="1"
-                            class="form-input w-32 text-right font-medium"
+                            class="form-input budget-input"
                             onchange="updateCategoryBudget('${category.id}', this.value)">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-6 mt-4">
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                        <span class="text-sm text-gray-500 dark:text-gray-400 block mb-1">Spent</span>
-                        <span class="text-xl font-semibold dark:text-white">${formatMoney(spending)}</span>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                        <span class="text-sm text-gray-500 dark:text-gray-400 block mb-1">Remaining</span>
-                        <span class="text-xl font-semibold ${remaining < 0 ? 'text-red-500' : 'text-green-500'}">
-                            ${formatMoney(remaining)}
-                        </span>
-                    </div>
-                </div>
-                <div class="mt-4">
-                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                        <div class="h-full rounded-full transition-all duration-500 ${
-                            status === 'over' ? 'bg-red-500' :
-                            status === 'near' ? 'bg-yellow-500' :
-                            'bg-green-500'
-                        }" style="width: ${Math.min(percentage, 100)}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="text-sm font-medium ${
-                            status === 'over' ? 'text-red-500' :
-                            status === 'near' ? 'text-yellow-500' :
-                            'text-green-500'
-                        }">
-                            ${budget > 0 ? `${percentage.toFixed(1)}% used` : 'No budget set'}
-                        </div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                            ${formatMoney(budget)} total
-                        </div>
-                    </div>
-                </div>
+            </div>
+            <div class="budget-progress-track">
+                <div class="budget-progress-fill ${status}" style="width: ${progressWidth}%"></div>
+            </div>
+            <div class="budget-meta">
+                <span>${utilizationLabel}</span>
+                <span>${remainingText}</span>
             </div>
         `;
         
@@ -373,7 +465,7 @@ function updateBudgets() {
                 state.budgets = lastMonthBudgets;
                 updateBudgets();
                 updateCharts();
-                updateSmartAlerts();
+                updateInsights();
                 alert('Successfully copied last month\'s budgets');
             }
         } catch (err) {
@@ -392,7 +484,7 @@ async function updateCategoryBudget(categoryId, amount) {
         state.budgets = budgets;
         updateBudgets();
         updateCharts();
-        updateSmartAlerts();
+        updateInsights();
     } catch (err) {
         console.error('Failed to update budget:', err);
         alert('Failed to update budget');
@@ -417,47 +509,46 @@ function updateSummaryCards() {
     }, 0);
     
     startBalanceEl.innerHTML = `
-        <div class="flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">Starting Balance</span>
-            <span class="text-2xl font-semibold">${formatMoney(totalStartBalance)}</span>
-        </div>
+        <div class="metric-label">Starting Balance</div>
+        <div class="metric-value">${formatMoney(totalStartBalance)}</div>
+        <p class="metric-footnote">Across all accounts</p>
     `;
     
     expectedIncomeEl.innerHTML = `
-        <div class="flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <div class="flex justify-between items-start mb-1">
-                <span class="text-sm text-gray-500 dark:text-gray-400">Expected Income</span>
-                <button onclick="editFinancialExpectation('expectedIncome')" 
-                    class="ml-2 px-2 py-1 text-xs rounded bg-blue-500 hover:bg-blue-600 text-white">
-                    Edit
-                </button>
-            </div>
-            <span class="text-2xl font-semibold">${formatMoney(state.meta.expectedIncome || 0)}</span>
+        <div class="metric-header">
+            <span class="metric-label">Expected Income</span>
+            <button onclick="editFinancialExpectation('expectedIncome')" class="metric-edit">Edit</button>
         </div>
+        <div class="metric-value">${formatMoney(state.meta.expectedIncome || 0)}</div>
+        <p class="metric-footnote">Set your target coming into the month.</p>
     `;
     
     expectedExpenseEl.innerHTML = `
-        <div class="flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <div class="flex justify-between items-start mb-1">
-                <span class="text-sm text-gray-500 dark:text-gray-400">Expected Expense</span>
-                <button onclick="editFinancialExpectation('expectedExpense')" 
-                    class="ml-2 px-2 py-1 text-xs rounded bg-blue-500 hover:bg-blue-600 text-white">
-                    Edit
-                </button>
-            </div>
-            <span class="text-2xl font-semibold">${formatMoney(state.meta.expectedExpense || 0)}</span>
+        <div class="metric-header">
+            <span class="metric-label">Expected Expense</span>
+            <button onclick="editFinancialExpectation('expectedExpense')" class="metric-edit">Edit</button>
         </div>
+        <div class="metric-value">${formatMoney(state.meta.expectedExpense || 0)}</div>
+        <p class="metric-footnote">Your planned monthly outflow.</p>
     `;
     
     const netChange = totals.savings + totals.investments - totals.spending;
     document.getElementById('netChange').innerHTML = `
-        <div class="flex flex-col p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <span class="text-sm text-gray-500 dark:text-gray-400 mb-1">Net Change</span>
-            <span class="text-2xl font-semibold ${netChange >= 0 ? 'text-green-500' : 'text-red-500'}">
-                ${formatMoney(netChange)}
-            </span>
+        <div class="metric-label">Net Change</div>
+        <div class="metric-value ${netChange >= 0 ? 'text-green-500' : 'text-red-500'}">
+            ${formatMoney(netChange)}
         </div>
+        <p class="metric-footnote">Savings + investments − spending.</p>
     `;
+
+    document.getElementById('snapshotSpending').textContent = formatMoney(totals.spending);
+    document.getElementById('snapshotSavings').textContent = formatMoney(totals.savings);
+    document.getElementById('snapshotInvestments').textContent = formatMoney(totals.investments);
+
+    const heroNetChange = document.getElementById('heroNetChange');
+    if (heroNetChange) {
+        heroNetChange.textContent = formatMoney(netChange);
+    }
 }
 
 async function editFinancialExpectation(type) {
@@ -498,7 +589,7 @@ async function editFinancialExpectation(type) {
                 await api.post(`/meta/${state.currentMonth}`, updates);
                 state.meta = updates;
                 updateSummaryCards();
-                updateSmartAlerts();
+                updateInsights();
             } catch (err) {
                 console.error('Failed to update financial expectation:', err);
                 alert('Failed to update financial expectation');
@@ -850,9 +941,9 @@ async function updateMonthlyTrendsChart() {
     }
 }
 
-// Smart Alerts
-function updateSmartAlerts() {
-    const alerts = [];
+// Insight Center
+function updateInsights() {
+    const insights = [];
     const totals = calculateTotals();
     
     // Budget alerts
@@ -866,12 +957,12 @@ function updateSmartAlerts() {
         
         const percentage = (spending / budget) * 100;
         if (percentage >= 100) {
-            alerts.push({
+            insights.push({
                 type: 'danger',
                 message: `Over budget in ${category.name} by ${formatMoney(spending - budget)}`
             });
         } else if (percentage >= 80) {
-            alerts.push({
+            insights.push({
                 type: 'warning',
                 message: `Near budget limit in ${category.name} (${percentage.toFixed(0)}%)`
             });
@@ -883,7 +974,7 @@ function updateSmartAlerts() {
         const actualIncome = totals.savings + totals.investments;
         const incomePercentage = (actualIncome / state.meta.expectedIncome) * 100;
         if (incomePercentage < 80) {
-            alerts.push({
+            insights.push({
                 type: 'warning',
                 message: `Income at ${incomePercentage.toFixed(0)}% of expected`
             });
@@ -893,20 +984,70 @@ function updateSmartAlerts() {
     if (state.meta.expectedExpense) {
         const expensePercentage = (totals.spending / state.meta.expectedExpense) * 100;
         if (expensePercentage > 100) {
-            alerts.push({
+            insights.push({
                 type: 'danger',
                 message: `Expenses exceeded expectations by ${(expensePercentage - 100).toFixed(0)}%`
             });
         }
     }
     
-    // Display alerts
-    const alertsContainer = document.getElementById('smartAlerts');
-    alertsContainer.innerHTML = alerts.map(alert => `
-        <div class="alert-badge ${alert.type}">
-            ${alert.message}
-        </div>
-    `).join('');
+    // Display insights
+    const themes = {
+        danger: { label: 'Critical', icon: '!', iconClass: 'danger' },
+        warning: { label: 'Caution', icon: '⚠', iconClass: 'warning' },
+        info: { label: 'Heads Up', icon: '•', iconClass: 'info' }
+    };
+    
+    const monthLabel = formatMonthYear(state.currentMonth);
+    const insightsContainer = document.getElementById('insightsList');
+    if (insightsContainer) {
+        insightsContainer.innerHTML = insights.length ? insights.map(insight => {
+            const theme = themes[insight.type] || themes.info;
+            return `
+                <div class="insight-card ${insight.type}">
+                    <div class="insight-icon ${theme.iconClass}">${theme.icon}</div>
+                    <div class="insight-content">
+                        <div class="insight-meta">
+                            <span>${theme.label}</span>
+                            <span>•</span>
+                            <span>${monthLabel}</span>
+                        </div>
+                        <p class="insight-message">${insight.message}</p>
+                    </div>
+                </div>
+            `;
+        }).join('') : `
+            <div class="insights-empty">All clear — no signals for ${monthLabel}.</div>
+        `;
+    }
+
+    const monthDisplay = document.getElementById('insightsMonth');
+    if (monthDisplay) {
+        monthDisplay.textContent = monthLabel;
+    }
+
+    const totalDisplay = document.getElementById('insightsTotal');
+    if (totalDisplay) {
+        totalDisplay.textContent = insights.length;
+    }
+
+    const badge = document.getElementById('insightsBadge');
+    const count = document.getElementById('insightsCount');
+    if (badge && count) {
+        if (insights.length) {
+            badge.classList.remove('hidden');
+            count.textContent = insights.length;
+        } else {
+            badge.classList.add('hidden');
+            count.textContent = '0';
+        }
+    }
+
+    const heroSignals = document.getElementById('heroSignals');
+    if (heroSignals) {
+        const label = insights.length === 1 ? 'insight' : 'insights';
+        heroSignals.textContent = `${insights.length} ${label}`;
+    }
 }
 
 // Modal handling
@@ -974,7 +1115,9 @@ function initImportExport() {
 document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initNavigation();
+    initInsightsSidebar();
     initMonthNavigation();
+    initDashboardShortcuts();
     initTransactionForm();
     initCategories();
     loadMonthData();
@@ -1001,103 +1144,106 @@ function updateAccounts() {
 
     accountsList.innerHTML = '';
     
+    if (!state.accounts.length) {
+        accountsList.innerHTML = '<p class="empty-state">No accounts yet. Add your first account above.</p>';
+    }
+    
     state.accounts.forEach(account => {
         const accountCard = document.createElement('div');
-        accountCard.className = 'section-card p-4';
+        accountCard.className = 'account-card';
         
         const monthBalance = account.balances[state.currentMonth] || { start: 0, end: 0, rate: 1 };
+        const classificationLabel = account.classification 
+            ? account.classification.charAt(0).toUpperCase() + account.classification.slice(1)
+            : 'Account';
+        const change = (Number(monthBalance.end) || 0) - (Number(monthBalance.start) || 0);
+        const changeClass = change >= 0 ? 'positive' : 'negative';
         
         accountCard.innerHTML = `
-            <div class="flex flex-col p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <h3 class="text-lg font-semibold dark:text-white mb-2">${account.name}</h3>
-                        <div class="flex space-x-4">
-                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                ${account.classification.charAt(0).toUpperCase() + account.classification.slice(1)}
-                            </span>
-                            <span class="px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                                ${account.currency}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex space-x-2">
-                        <button class="px-3 py-1 text-sm rounded bg-blue-500 hover:bg-blue-600 text-white transition-colors" 
-                            onclick="editAccount('${account.id}')">Edit</button>
-                        <button class="px-3 py-1 text-sm rounded bg-red-500 hover:bg-red-600 text-white transition-colors" 
-                            onclick="deleteAccount('${account.id}')">Delete</button>
+            <div class="account-card-header">
+                <div>
+                    <p class="account-eyebrow">${classificationLabel} · ${account.currency}</p>
+                    <h3 class="account-name">${account.name}</h3>
+                    <div class="account-chips">
+                        <span class="account-chip">${classificationLabel}</span>
+                        <span class="account-chip subtle">${account.currency}</span>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-6 mb-6">
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="flex flex-col">
-                            <label class="text-sm text-gray-500 dark:text-gray-400 mb-2">Start Balance</label>
-                            <div class="flex items-center">
-                                <span class="text-gray-400 mr-2">$</span>
-                                <input type="number" 
-                                    value="${monthBalance.start}"
-                                    step="0.01"
-                                    class="form-input flex-1 text-right font-medium text-lg"
-                                    onchange="updateAccountBalance('${account.id}', 'start', this.value)">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="flex flex-col">
-                            <label class="text-sm text-gray-500 dark:text-gray-400 mb-2">End Balance</label>
-                            <div class="flex items-center">
-                                <span class="text-gray-400 mr-2">$</span>
-                                <input type="number"
-                                    value="${monthBalance.end}"
-                                    step="0.01"
-                                    class="form-input flex-1 text-right font-medium text-lg"
-                                    onchange="updateAccountBalance('${account.id}', 'end', this.value)">
-                            </div>
-                        </div>
-                    </div>
+                <div class="account-actions">
+                    <button class="account-action" onclick="editAccount('${account.id}')">Edit</button>
+                    <button class="account-action danger" onclick="deleteAccount('${account.id}')">Delete</button>
                 </div>
-                ${account.currency === 'INR→CAD' ? `
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                        <div class="flex flex-col">
-                            <label class="text-sm text-gray-500 dark:text-gray-400 mb-2">INR→CAD Rate</label>
-                            <div class="flex items-center">
-                                <span class="text-gray-400 mr-2">₹1 =</span>
-                                <input type="number"
-                                    value="${monthBalance.rate || 1}"
-                                    step="0.0001"
-                                    class="form-input flex-1 text-right font-medium"
-                                    onchange="updateAccountBalance('${account.id}', 'rate', this.value)">
-                                <span class="text-gray-400 ml-2">CAD</span>
-                            </div>
-                        </div>
-                    </div>
-                ` : ''}
             </div>
+            <div class="account-metrics">
+                <div class="account-metric editable">
+                    <span class="account-metric-label">Start Balance</span>
+                    <div class="account-input">
+                        <span class="account-input-prefix">$</span>
+                        <input type="number" 
+                            value="${monthBalance.start}"
+                            step="0.01"
+                            class="form-input text-right"
+                            onchange="updateAccountBalance('${account.id}', 'start', this.value)">
+                    </div>
+                </div>
+                <div class="account-metric editable">
+                    <span class="account-metric-label">End Balance</span>
+                    <div class="account-input">
+                        <span class="account-input-prefix">$</span>
+                        <input type="number"
+                            value="${monthBalance.end}"
+                            step="0.01"
+                            class="form-input text-right"
+                            onchange="updateAccountBalance('${account.id}', 'end', this.value)">
+                    </div>
+                </div>
+                <div class="account-metric">
+                    <span class="account-metric-label">Change</span>
+                    <strong class="account-change ${changeClass}">${formatMoney(change)}</strong>
+                </div>
+            </div>
+            ${account.currency === 'INR→CAD' ? `
+                <div class="account-rate-card">
+                    <span class="account-metric-label">INR→CAD Rate</span>
+                    <div class="account-input">
+                        <span class="account-input-prefix">₹1 =</span>
+                        <input type="number"
+                            value="${monthBalance.rate || 1}"
+                            step="0.0001"
+                            class="form-input text-right"
+                            onchange="updateAccountBalance('${account.id}', 'rate', this.value)">
+                        <span class="account-input-suffix">CAD</span>
+                    </div>
+                </div>
+            ` : ''}
         `;
         
         accountsList.appendChild(accountCard);
     });
 
-    // Initialize add account form
-    document.getElementById('addAccountForm')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const account = {
-            name: document.getElementById('newAccountName').value,
-            currency: document.getElementById('newAccountCurrency').value,
-            classification: document.getElementById('newAccountClassification').value,
-            balances: {}
-        };
-        
-        try {
-            await api.post('/accounts', account);
-            await loadMonthData();
-            e.target.reset();
-        } catch (err) {
-            console.error('Failed to add account:', err);
-            alert('Failed to add account');
-        }
-    });
+    const addAccountForm = document.getElementById('addAccountForm');
+    if (addAccountForm && !addAccountForm.dataset.bound) {
+        addAccountForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const account = {
+                name: document.getElementById('newAccountName').value,
+                currency: document.getElementById('newAccountCurrency').value,
+                classification: document.getElementById('newAccountClassification').value,
+                balances: {}
+            };
+            
+            try {
+                await api.post('/accounts', account);
+                await loadMonthData();
+                e.target.reset();
+            } catch (err) {
+                console.error('Failed to add account:', err);
+                alert('Failed to add account');
+            }
+        });
+        addAccountForm.dataset.bound = 'true';
+    }
 }
 
 async function editAccount(accountId) {
@@ -1285,18 +1431,17 @@ async function loadArchiveData() {
     const archiveList = document.getElementById('archiveList');
     if (!archiveList) return;
 
-    archiveList.innerHTML = `
-        <div class="grid gap-6 p-6">
-            <h2 class="text-2xl font-semibold dark:text-white mb-4">Transaction History</h2>
-            <div class="space-y-6" id="archiveMonths"></div>
-        </div>
-    `;
+    archiveList.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400">Loading history…</p>';
     
-    const archiveMonths = document.getElementById('archiveMonths');
-    
-    // Get all months with transactions
     const allTransactions = await api.get('/entries');
     const months = [...new Set(allTransactions.map(t => t.date.slice(0, 7)))].sort().reverse();
+    
+    if (!months.length) {
+        archiveList.innerHTML = '<p class="empty-state">No archived months yet.</p>';
+        return;
+    }
+    
+    archiveList.innerHTML = '';
     
     for (const month of months) {
         const monthData = allTransactions.filter(t => t.date.startsWith(month));
@@ -1307,65 +1452,78 @@ async function loadArchiveData() {
             else if (t.type === 'invest') acc.investments += amount;
             return acc;
         }, { spending: 0, savings: 0, investments: 0 });
+        const monthLabel = formatMonthYear(month);
 
         const monthCard = document.createElement('div');
-        monthCard.className = 'section-card';
+        monthCard.className = 'archive-card';
+        monthCard.id = `archive-card-${month}`;
         monthCard.innerHTML = `
-            <div class="p-4 cursor-pointer" onclick="toggleArchiveMonth('${month}')">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium">${formatMonthYear(month)}</h3>
-                    <svg class="w-5 h-5 transform transition-transform" id="arrow-${month}">
-                        <path d="M9 5l7 7-7 7" stroke="currentColor" fill="none" stroke-width="2"/>
-                    </svg>
+            <button type="button" class="archive-card-header" id="archive-header-${month}" aria-expanded="false" aria-controls="details-${month}" onclick="toggleArchiveMonth('${month}')">
+                <div>
+                    <p class="archive-eyebrow">Statement</p>
+                    <h3 class="archive-title">${monthLabel}</h3>
                 </div>
-            </div>
-            <div class="hidden" id="details-${month}">
-                <div class="px-4 pb-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Total Spending:</span>
-                            <div class="font-medium">${formatMoney(totals.spending)}</div>
-                        </div>
-                        <div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Total Savings:</span>
-                            <div class="font-medium">${formatMoney(totals.savings)}</div>
-                        </div>
-                        <div>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Total Investments:</span>
-                            <div class="font-medium">${formatMoney(totals.investments)}</div>
-                        </div>
+                <div class="archive-summary">
+                    <div class="archive-summary-item">
+                        <span>Spending</span>
+                        <strong>${formatMoney(totals.spending)}</strong>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full">
-                            <thead>
-                                <tr class="text-left bg-gray-50 dark:bg-gray-700">
-                                    <th class="px-4 py-2">Date</th>
-                                    <th class="px-4 py-2">Type</th>
-                                    <th class="px-4 py-2">Category</th>
-                                    <th class="px-4 py-2">Amount</th>
-                                    <th class="px-4 py-2">Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${monthData.map(t => {
-                                    const category = state.categories.find(c => c.id === t.category);
-                                    return `
-                                        <tr>
-                                            <td class="px-4 py-2">${formatDate(t.date)}</td>
-                                            <td class="px-4 py-2">${t.type}</td>
-                                            <td class="px-4 py-2">
-                                                <span class="category-badge" style="background-color: ${category?.color}">
-                                                    ${category?.name || 'Unknown'}
-                                                </span>
-                                            </td>
-                                            <td class="px-4 py-2">${formatMoney(t.amount)}</td>
-                                            <td class="px-4 py-2">${t.notes || ''}</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
+                    <div class="archive-summary-item">
+                        <span>Savings</span>
+                        <strong>${formatMoney(totals.savings)}</strong>
                     </div>
+                    <div class="archive-summary-item">
+                        <span>Investments</span>
+                        <strong>${formatMoney(totals.investments)}</strong>
+                    </div>
+                </div>
+                <svg id="arrow-${month}" class="archive-arrow" width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2">
+                    <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <div class="archive-details hidden" id="details-${month}">
+                <div class="archive-detail-grid">
+                    <div>
+                        <span>Entries</span>
+                        <strong>${monthData.length}</strong>
+                    </div>
+                    <div>
+                        <span>Net Flow</span>
+                        <strong class="${(totals.savings + totals.investments - totals.spending) >= 0 ? 'text-green-500' : 'text-red-500'}">
+                            ${formatMoney((totals.savings + totals.investments) - totals.spending)}
+                        </strong>
+                    </div>
+                </div>
+                <div class="archive-table-wrapper">
+                    <table class="archive-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${monthData.map(t => {
+                                const category = state.categories.find(c => c.id === t.category);
+                                return `
+                                    <tr>
+                                        <td>${formatDate(t.date)}</td>
+                                        <td>${t.type}</td>
+                                        <td>
+                                            <span class="category-badge" style="background-color: ${category?.color}">
+                                                ${category?.name || 'Unknown'}
+                                            </span>
+                                        </td>
+                                        <td>${formatMoney(t.amount)}</td>
+                                        <td>${t.notes || ''}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -1377,9 +1535,15 @@ async function loadArchiveData() {
 function toggleArchiveMonth(month) {
     const details = document.getElementById(`details-${month}`);
     const arrow = document.getElementById(`arrow-${month}`);
+    const card = document.getElementById(`archive-card-${month}`);
+    const header = document.getElementById(`archive-header-${month}`);
+    if (!details) return;
     
     details.classList.toggle('hidden');
-    arrow.style.transform = details.classList.contains('hidden') ? '' : 'rotate(90deg)';
+    const isOpen = !details.classList.contains('hidden');
+    if (arrow) arrow.style.transform = isOpen ? 'rotate(90deg)' : '';
+    if (card) card.classList.toggle('open', isOpen);
+    if (header) header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
 // Settings management
